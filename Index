@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gym Management</title>
+<script>
+/* ===== GITHUB HOSTING SHIM (added): lets the existing code call your Apps Script web app via fetch ===== */
+window.GAS_URL='https://script.google.com/macros/s/AKfycbw9h7vyzRqL5lYnV3pPYeajvwiUod7s7Xd-PMDY6ZWJZGbgFMi5odBVYKobA7GqqVc1zg/exec';   /* e.g. https://script.google.com/macros/s/AKfy.../exec */
+(function(){
+  function mk(ok,no){return{
+    withSuccessHandler:function(f){return mk(f,no);},
+    withFailureHandler:function(f){return mk(ok,f);},
+    api:function(a,p){
+      fetch(window.GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({a:a,p:p||{}}),redirect:'follow'})
+        .then(function(r){return r.text();})
+        .then(function(t){try{JSON.parse(t);}catch(e){throw new Error('Server error: check GAS_URL and deployment (Execute as: Me, Who has access: Anyone).');}return t;})
+        .then(function(t){if(ok)ok(t);},function(e){if(no)no(e);});
+    }};}
+  window.google={script:{run:mk()}};
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5f9;--card:#fff;--ink:#111827;--mut:#6b7280;--line:#e5e7eb;--acc:#f97316;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--side:#111827}
+*{box-sizing:border-box}body{margin:0;font:14px Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+#side{width:230px;background:var(--side);padding:18px 12px;position:fixed;inset:0 auto 0 0;overflow:auto;z-index:20;transition:.2s}
+.brand{font-weight:700;font-size:18px;color:#fff;padding:6px 10px 18px}.brand b{color:var(--acc)}
+#side a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;cursor:pointer;color:#cbd5e1;margin-bottom:2px}
+#side a:hover{background:#1f2937}#side a.on{background:var(--acc);color:#fff}
+main{margin-left:230px;padding:20px;min-width:0}
+header{display:flex;align-items:center;gap:12px;margin-bottom:16px}header h1{font-size:20px;margin:0;flex:1}
+#burger{display:none;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:18px}
+.card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 3px #0001;margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:15px}h2{margin:0;font-size:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px #0001;border-left:4px solid var(--acc)}
+.stat.ok{border-color:var(--ok)}.stat.bad{border-color:var(--bad)}.stat.warn{border-color:var(--warn)}
+.stat small{color:var(--mut);font-weight:500}.stat div{font-size:22px;font-weight:700;margin-top:4px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.ch{height:260px;position:relative}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.gap{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}.end{justify-content:flex-end;margin-top:16px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;color:var(--mut);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}tr:hover td{background:#fafafa}
+.mut{color:var(--mut)}small{color:var(--mut);display:block}
+.btn{border:0;background:var(--acc);color:#fff;padding:9px 15px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600}
+.btn.sm{padding:4px 9px;font-size:12px}.btn.g{background:#eef0f4;color:var(--ink)}.btn.r{background:#fee2e2;color:var(--bad)}.btn.w{background:#22c55e}.btn.k{background:var(--ink)}
+.b{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;display:inline-block}
+.b.ok{background:#dcfce7;color:#166534}.b.warn{background:#fef3c7;color:#92400e}.b.bad{background:#fee2e2;color:#991b1b}.b.mu{background:#e5e7eb;color:#374151}.b.in{background:#dbeafe;color:#1e40af}
+label{font-size:12px;font-weight:600;color:var(--mut);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+input[readonly]{background:#f3f4f6}.gap input,.gap select{width:auto;min-width:150px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.full{grid-column:1/-1}
+.ov{position:fixed;inset:0;background:#0008;overflow:auto;padding:28px 12px;z-index:50;display:flex;justify-content:center;align-items:flex-start}
+.md{background:#fff;border-radius:14px;width:100%;max-width:720px;padding:20px}.md.wide{max-width:980px}.md h3{margin-top:0}
+.li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}.li:last-child{border:0}
+.av{width:48px;height:48px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:700;overflow:hidden}.av img{width:100%;height:100%;object-fit:cover}
+#toast{position:fixed;right:16px;bottom:16px;z-index:99}#toast div{background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;margin-top:8px}#toast .e{background:var(--bad)}
+#loader{display:none;position:fixed;inset:0;background:#fff8;z-index:90;align-items:center;justify-content:center}
+#loader i{width:38px;height:38px;border:4px solid #ddd;border-top-color:var(--acc);border-radius:50%;animation:s .7s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+#print{display:none}
+@media print{#app,#modalRoot,#toast,#loader{display:none!important}#print{display:block}}
+@media(max-width:900px){#side{transform:translateX(-100%)}#side.open{transform:none}main{margin-left:0;padding:12px}#burger{display:block}}
+<style id="gm-settings-css">
+/* ===== Settings / Login / Access-control module (added) ===== */
+body:not(.gm-in) #app{visibility:hidden}
+#gmLogin{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;font-family:Inter,system-ui,sans-serif;
+  background:radial-gradient(1000px 520px at 8% -10%,#f9731638,transparent),radial-gradient(800px 460px at 100% 110%,#6366f138,transparent),#0b1220}
+.gl-spin{width:42px;height:42px;border:4px solid #ffffff22;border-top-color:#f97316;border-radius:50%;animation:s .7s linear infinite}
+.gl-wrap{display:grid;grid-template-columns:1.05fr 1fr;width:100%;max-width:960px;min-height:560px;border-radius:24px;overflow:hidden;box-shadow:0 30px 80px #0009,0 0 0 1px #ffffff14}
+.gl-hero{position:relative;overflow:hidden;padding:48px 42px;color:#fff;background:linear-gradient(145deg,#f97316,#ea580c 55%,#9a3412);display:flex;flex-direction:column;justify-content:center}
+.gl-hero:after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:#ffffff14;right:-120px;bottom:-120px}
+.gl-hero:before{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:#ffffff0f;left:-60px;top:-60px}
+.gl-logo{position:relative;width:78px;height:78px;border-radius:20px;background:#ffffff2e;display:grid;place-items:center;font-size:38px;margin-bottom:22px;overflow:hidden;box-shadow:0 8px 24px #0003}
+.gl-logo img{width:100%;height:100%;object-fit:contain;background:#fff}
+.gl-hero h1{position:relative;font-size:32px;line-height:1.15;margin:0 0 12px}
+.gl-hero p{position:relative;margin:0 0 24px;opacity:.92;line-height:1.55}
+.gl-hero ul{position:relative;list-style:none;margin:0;padding:0;display:grid;gap:10px;font-weight:500}
+.gl-card{background:#fff;padding:48px 42px;display:flex;flex-direction:column;justify-content:center}
+.gl-card h2{font-size:25px;margin:0 0 4px}.gl-sub{color:var(--mut);margin:0 0 20px}
+.gl-card label{margin-top:14px}
+.gl-card input{padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);background:#f9fafb}
+.gl-card input:focus{outline:0;border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px #f9731622}
+.gl-pw{position:relative}.gl-pw input{padding-right:48px}
+.gl-pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;font-size:16px;padding:6px 8px}
+.gl-card .gl-rem{display:flex;align-items:center;gap:8px;font-weight:500;margin-top:14px;cursor:pointer}.gl-rem input{width:auto;accent-color:var(--acc)}
+.gl-err{color:var(--bad);font-size:13px;min-height:18px;margin-top:12px;font-weight:500}
+.gl-btn{margin-top:8px;border:0;border-radius:12px;padding:13px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 10px 24px #f9731655;transition:.15s}
+.gl-btn:hover{transform:translateY(-1px)}.gl-btn:disabled{opacity:.6;cursor:wait;transform:none}
+.gl-foot{text-align:center;color:var(--mut);font-size:12px;margin-top:22px}
+@media(max-width:760px){.gl-wrap{grid-template-columns:1fr;min-height:0}.gl-hero{padding:26px 24px}.gl-hero h1{font-size:24px}.gl-hero ul{display:none}.gl-hero p{margin:0}.gl-card{padding:26px 24px}}
+.brand{display:flex;align-items:center;gap:8px}.brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gm-bl{width:30px;height:30px;border-radius:8px;object-fit:contain;background:#fff;flex:none}
+#gmWho{margin-top:18px;padding-top:14px;border-top:1px solid #1f2937}
+.gm-u{display:flex;gap:10px;align-items:center;color:#fff;margin-bottom:10px}.gm-u .av{width:36px;height:36px;flex:none}.gm-u small{color:#94a3b8}.gm-u div{min-width:0}
+.gm-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.gm-tabs button{border:0;background:#fff;padding:9px 14px;border-radius:10px;cursor:pointer;font:inherit;font-weight:600;color:var(--mut);box-shadow:0 1px 3px #0001}
+.gm-tabs button.on{background:var(--acc);color:#fff}
+.gm-logo{width:64px;height:64px;border-radius:14px;background:#f3f4f6;display:grid;place-items:center;font-size:28px;overflow:hidden;flex:none}.gm-logo img{width:100%;height:100%;object-fit:contain}
+.gm-pm{min-width:96px}input:disabled,select:disabled,textarea:disabled{background:#f3f4f6;color:#6b7280;cursor:not-allowed}
+@media print{#gmLogin{display:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side"><div class="brand">🏋️ <b>Gym</b>Manager</div><nav id="nav"></nav></aside>
+  <main><header><button id="burger" onclick="$('#side').classList.toggle('open')">☰</button><h1 id="title"></h1><span class="mut" id="dt"></span></header><div id="view"></div></main>
+</div>
+<div id="modalRoot"></div><div id="toast"></div><div id="loader"><i></i></div><div id="print"></div>
+
+<script>
+window.onerror=function(m,s,l,c){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#dc2626;color:#fff;padding:10px 14px;font:13px monospace';d.textContent='JS ERROR: '+m+' (line '+l+', col '+c+')';document.body.appendChild(d);};
+</script>
+<script>
+/* ===== CONFIG ===== */
+let GYM='FitZone Gym', CC='91'; /* gym name for receipts and WhatsApp, default country code for 10-digit numbers */
+const CATS=['Rent','Electricity','Staff Salary','Equipment','Maintenance','Cleaning','Marketing','Other'], MODES=['Cash','UPI','Bank Transfer','Other'];
+const NAV=[['dashboard','Dashboard','📊'],['members','Members','👥'],['plans','Plans','🏷️'],['payments','Fees & Payments','💳'],['attendance','Attendance','✅'],['renewals','Renewals','🔄'],['expenses','Expenses','🧾'],['reports','Reports','📈']];
+const REP=[['collection_daily','Daily Collection'],['collection_weekly','Weekly Collection'],['collection_monthly','Monthly Collection'],['collection_yearly','Yearly Collection'],['memberpay','Member-wise Payments'],['outstanding','Outstanding Fees (Member-wise)'],['renewals','Membership Renewals'],['attendance','Attendance (Member-wise %)'],['attendance_log','Attendance Log'],['expense_list','Expense Report'],['expense_daily','Daily Expenses'],['expense_monthly','Monthly Expenses'],['expense_category','Category-wise Expenses'],['pnl','Profit & Loss']];
+let DB={members:[],plans:[],payments:[],expenses:[],history:[],dash:{},today:''},page='dashboard',dirty=false,charts={},ATT=[],ATTD='',MC={},MF=[],PH='',PROF={},RPT={cols:[],rows:[],name:'report'};
+const $=s=>document.querySelector(s),n=v=>Number(v)||0,money=v=>'₹'+n(v).toLocaleString('en-IN'),
+esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
+mem=id=>DB.members.find(m=>m.MemberID===id)||{},iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
+BC={Active:'ok',Paid:'ok',Present:'ok','Expiring Soon':'warn',Partial:'warn',Leave:'warn',Expired:'bad',Absent:'bad',Pending:'bad',Inactive:'mu',Advance:'in'},
+bd=s=>`<span class="b ${BC[s]||'mu'}">${esc(s)}</span>`;
+function addDur(s,d,u){const a=s.split('-').map(Number);let dt;if(u==='Months'){dt=new Date(a[0],a[1]-1+d,a[2]);if(dt.getDate()!==a[2])dt=new Date(a[0],a[1]+d,0);}else dt=new Date(a[0],a[1]-1,a[2]+d);return iso(dt);}
+const daysLeft=m=>Math.round((Date.parse(m.ExpiryDate)-Date.parse(DB.today))/864e5);
+
+/* ===== infrastructure ===== */
+async function call(a,p,o={}){
+  if(!o.quiet)$('#loader').style.display='flex';
+  try{const r=await new Promise((ok,no)=>google.script.run.withSuccessHandler(ok).withFailureHandler(no).api(a,p||{}));
+    const j=JSON.parse(r);if(!j.ok)throw new Error(j.error);if(j.data&&j.data.members)DB=j.data;return j.data;}
+  catch(e){toast(e.message||String(e),1);throw e;}finally{$('#loader').style.display='none';}
+}
+function toast(m,e){const d=document.createElement('div');d.textContent=m;if(e)d.className='e';$('#toast').appendChild(d);setTimeout(()=>d.remove(),3500);}
+function modal(h,wide){$('#modalRoot').innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="md ${wide?'wide':''}">${h}</div></div>`;}
+const closeM=()=>$('#modalRoot').innerHTML='';
+function ask(msg,fn){modal(`<h3>Please confirm</h3><p>${msg}</p><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" style="background:var(--bad)" id="yes">Delete</button></div>`);$('#yes').onclick=async()=>{closeM();await fn();};}
+function tbl(cols,rows){return `<table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(r=>'<tr>'+cols.map(c=>`<td>${c[1](r)}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}" class="mut" style="text-align:center;padding:28px">No records found</td></tr>`}</tbody></table>`;}
+function fld(f,v){const val=v[f.k]==null?'':v[f.k],a=`id="f_${f.k}" ${f.ro?'readonly':''} ${f.h?`oninput="memCalc('${f.k}')" onchange="memCalc('${f.k}')"`:''}`;let i;
+  if(f.t==='select')i=`<select ${a}>${f.o.map(o=>`<option ${o==val?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(f.t==='textarea')i=`<textarea rows="2" ${a}>${esc(val)}</textarea>`;
+  else i=`<input type="${f.t||'text'}" ${f.t==='number'?'step="any" min="0"':''} value="${esc(val)}" ${a}>`;
+  return `<div class="${f.full?'full':''}"><label>${f.l}${f.r?' *':''}</label>${i}</div>`;}
+function val(fs){const o={};for(const f of fs){if(f.ro)continue;const v=$('#f_'+f.k).value.trim();if(f.r&&!v){toast(f.l+' is required',1);return null;}o[f.k]=v;}return o;}
+function doPrint(h){$('#print').innerHTML=h;setTimeout(()=>window.print(),120);}
+const waBtn=(id,t,l='WhatsApp')=>`<button class="btn sm w" onclick="wa('${id}','${t}')">${l}</button>`;
+
+/* ===== WhatsApp ===== */
+const WA={
+  expiry:m=>`Hello ${m.Name}, this is a reminder from ${GYM}. Your ${m.Plan} membership ${m.MStatus==='Expired'?'expired':'expires'} on ${m.ExpiryDate}. Please renew to continue your workouts. Thank you!`,
+  pending:m=>`Hello ${m.Name}, a gentle reminder from ${GYM}: you have a pending fee balance of ${money(m.Pending)} for your ${m.Plan} membership. Kindly clear it at the earliest. Thank you!`,
+  payment:(m,p)=>p?`Hello ${m.Name}, we received your payment of ${money(p.Received)} (${p.Mode}) on ${p.Date}. Receipt No: ${p.PaymentID}. Balance: ${money(p.Balance)}. Thank you! - ${GYM}`:`Hello ${m.Name}, thank you for your payment. - ${GYM}`,
+  renewal:m=>`Hello ${m.Name}, your ${GYM} membership has been renewed. Plan: ${m.Plan}, valid ${m.StartDate} to ${m.ExpiryDate}. Stay fit! 💪`
+};
+function wa(id,type,pid){const m=mem(id),ps=DB.payments.filter(x=>x.MemberID===id),p=pid?DB.payments.find(x=>x.PaymentID===pid):ps[ps.length-1];
+  let num=String(m.WhatsApp||m.Mobile||'').replace(/\D/g,'');if(num.length===10)num=CC+num;
+  var SL=String.fromCharCode(47);window.open('https:'+SL+SL+'wa.me/'+num+'?text='+encodeURIComponent(WA[type](m,p)),'_blank');}
+function waMenu(id){const m=mem(id);modal(`<h3>WhatsApp – ${esc(m.Name)}</h3><div class="grid">${[['expiry','Membership expiry reminder'],['pending','Pending fees reminder'],['payment','Payment confirmation'],['renewal','Renewal confirmation']].map(x=>`<button class="btn w" onclick="wa('${id}','${x[0]}')">${x[1]}</button>`).join('')}</div><div class="gap end"><button class="btn g" onclick="closeM()">Close</button></div>`);}
+
+/* ===== navigation ===== */
+const V={dashboard:vDash,members:vMembers,plans:vPlans,payments:vPay,attendance:vAtt,renewals:vRen,expenses:vExp,reports:vRep};
+function go(p){page=p;document.querySelectorAll('#side a').forEach(a=>a.classList.toggle('on',a.dataset.p===p));$('#side').classList.remove('open');$('#title').textContent=NAV.find(x=>x[0]===p)[1];V[p]();window.scrollTo(0,0);}
+async function refresh(){await call('bootstrap');V[page]();}
+
+/* ===== dashboard ===== */
+async function vDash(){
+  if(dirty){dirty=false;await call('bootstrap');}
+  const d=DB.dash,c=d.charts;
+  const S=[['Total Members',d.total],['Active Members',d.active,'ok'],['Inactive Members',d.inactive],['Expired Memberships',d.expired,'bad'],['Expiring Soon (7 days)',d.expiring,'warn'],["Today's Attendance",d.attToday.Present+' present'],["Today's Collection",money(d.todayCollection),'ok'],['Month Collection',money(d.monthCollection),'ok'],['Pending Fees',money(d.pending),'bad'],['Monthly Expenses',money(d.monthExpenses),'warn'],['Monthly Profit',money(d.monthProfit),d.monthProfit>=0?'ok':'bad']];
+  const L=(t,ids,fn)=>`<div class="card"><h3>${t} (${ids.length})</h3>${ids.slice(0,6).map(id=>{const m=mem(id);return `<div class="li"><span><b>${esc(m.Name)}</b><small>${fn(m)}</small></span><span class="gap">${waBtn(id,m.MStatus==='Expired'||m.MStatus==='Expiring Soon'?'expiry':'pending')}</span></div>`}).join('')||'<div class="mut">Nothing to show 🎉</div>'}${ids.length>6?`<div style="margin-top:8px"><a href="#" onclick="go('renewals');return false">View all →</a></div>`:''}</div>`;
+  $('#view').innerHTML=`<div class="stats">${S.map(s=>`<div class="stat ${s[2]||''}"><small>${s[0]}</small><div>${s[1]}</div></div>`).join('')}</div>
+  <div class="cols">${L('⏰ Expiring in 7 days',d.expiringList,m=>'Expires '+m.ExpiryDate+' · '+daysLeft(m)+' day(s) left')}${L('❌ Already expired',d.expiredList,m=>'Expired '+m.ExpiryDate)}${L('💰 Pending fees',d.pendingList,m=>'Pending '+money(m.Pending))}
+  <div class="card"><h3>🆕 New members (7 days) (${d.newMembers.length})</h3>${d.newMembers.slice(0,6).map(id=>`<div class="li"><b>${esc(mem(id).Name)}</b><span class="mut">${mem(id).JoinDate}</span></div>`).join('')||'<div class="mut">No new members</div>'}</div>
+  <div class="card"><h3>📅 Today's attendance</h3><div class="gap">${bd('Present')} ${d.attToday.Present} ${bd('Absent')} ${d.attToday.Absent} ${bd('Leave')} ${d.attToday.Leave}</div><div style="margin-top:12px"><button class="btn sm" onclick="go('attendance')">Mark attendance</button></div></div></div>
+  <div class="cols" style="margin-top:16px"><div class="card"><h3>Monthly Revenue</h3><div class="ch"><canvas id="c1"></canvas></div></div><div class="card"><h3>Monthly Expenses</h3><div class="ch"><canvas id="c2"></canvas></div></div><div class="card"><h3>Member Growth</h3><div class="ch"><canvas id="c3"></canvas></div></div><div class="card"><h3>Plan Distribution</h3><div class="ch"><canvas id="c4"></canvas></div></div></div>`;
+  const mk=(id,type,labels,ds,o)=>{if(charts[id])charts[id].destroy();charts[id]=new Chart($('#'+id),{type,data:{labels,datasets:ds},options:Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:type==='doughnut'}}},o||{})});};
+  mk('c1','bar',c.months,[{label:'Revenue',data:c.revenue,backgroundColor:'#f97316',borderRadius:6}]);
+  mk('c2','bar',c.months,[{label:'Expenses',data:c.expenses,backgroundColor:'#ef4444',borderRadius:6}]);
+  mk('c3','line',c.months,[{label:'Members',data:c.growth,borderColor:'#6366f1',backgroundColor:'#6366f133',fill:true,tension:.3}]);
+  mk('c4','doughnut',c.plans.labels,[{data:c.plans.values,backgroundColor:['#f97316','#6366f1','#16a34a','#eab308','#ef4444','#06b6d4','#a855f7']}]);
+}
+
+/* ===== members ===== */
+function vMembers(){$('#view').innerHTML=`<div class="bar"><h2>Members</h2><div class="gap"><input id="q" placeholder="Search name, mobile or ID" oninput="mList()"><select id="sf" onchange="mList()"><option value="">All members</option><option>Active</option><option>Expiring Soon</option><option>Expired</option><option>Inactive</option></select><button class="btn" onclick="memberForm()">+ Add Member</button></div></div><div class="card tw" id="mt"></div>`;mList();}
+function mList(){const q=$('#q').value.toLowerCase(),sf=$('#sf').value;
+  const L=DB.members.filter(m=>(m.Name+m.Mobile+m.MemberID).toLowerCase().includes(q)&&(!sf||m.MStatus===sf||(sf==='Active'&&m.MStatus==='Expiring Soon')));
+  $('#mt').innerHTML=tbl([['ID',m=>m.MemberID],['Name',m=>`<b>${esc(m.Name)}</b><small>${esc(m.Mobile)}</small>`],['Plan',m=>esc(m.Plan)],['Expiry',m=>m.ExpiryDate],['Status',m=>bd(m.MStatus)],['Pending',m=>n(m.Pending)>0?`<b style="color:var(--bad)">${money(m.Pending)}</b>`:money(0)],['',m=>`<span class="gap"><button class="btn sm g" onclick="viewMember('${m.MemberID}')">View</button><button class="btn sm g" onclick="memberForm('${m.MemberID}')">Edit</button><button class="btn sm k" onclick="payForm('${m.MemberID}')">Pay</button><button class="btn sm w" onclick="waMenu('${m.MemberID}')">WA</button><button class="btn sm r" onclick="delMember('${m.MemberID}')">Delete</button></span>`]],L);}
+function mFields(isNew,m){const pn=DB.plans.filter(p=>p.Status!=='Inactive').map(p=>p.Name);if(m.Plan&&!pn.includes(m.Plan))pn.push(m.Plan);
+  const F=[{k:'Name',l:'Full Name',r:1},{k:'Mobile',l:'Mobile Number',t:'tel',r:1},{k:'WhatsApp',l:'WhatsApp Number',t:'tel'},{k:'Email',l:'Email Address',t:'email'},{k:'Gender',l:'Gender',t:'select',o:['Male','Female','Other']},{k:'DOB',l:'Date of Birth',t:'date'},{k:'JoinDate',l:'Joining Date',t:'date'},{k:'Status',l:'Status',t:'select',o:['Active','Inactive']},{k:'Plan',l:'Membership Plan',t:'select',o:pn,h:1},{k:'StartDate',l:'Membership Start Date',t:'date',h:1,r:1},{k:'ExpiryDate',l:'Membership Expiry Date',t:'date',r:1},{k:'TotalFees',l:'Total Membership Fees',t:'number',h:1},{k:'Discount',l:'Discount',t:'number',h:1},{k:'Final',l:'Final Payable',ro:1}];
+  if(isNew)F.push({k:'Paid',l:'Amount Paid Now',t:'number',h:1},{k:'Mode',l:'Payment Mode',t:'select',o:MODES},{k:'Reference',l:'Transaction Reference'});
+  F.push({k:'Pend',l:'Pending Amount',ro:1},{k:'Emergency',l:'Emergency Contact',t:'tel'},{k:'Address',l:'Full Address',t:'textarea',full:1},{k:'Medical',l:'Medical Notes (optional)',t:'textarea',full:1});return F;}
+function memberForm(id){
+  const act=DB.plans.filter(p=>p.Status!=='Inactive'),m=id?{...mem(id)}:{JoinDate:DB.today,StartDate:DB.today,Gender:'Male',Status:'Active',Discount:0,Paid:0,Mode:'Cash',Plan:(act[0]||{}).Name};
+  MC={carry:n(m.CarryFwd),paid:n(m.Paid)};PH='';MF=mFields(!id,m);
+  modal(`<h3>${id?'Edit Member '+id:'Add New Member'}</h3><div class="grid">${MF.map(f=>fld(f,m)).join('')}<div class="full"><label>Photo (optional)${id?' – leave empty to keep current':''}</label><input type="file" accept="image/*" onchange="pickPhoto(this)"><img id="pv" style="display:none;width:80px;height:80px;object-fit:cover;border-radius:50%;margin-top:8px"></div></div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveMember('${id||''}')">Save Member</button></div>`,true);
+  memCalc(id?'':'Plan');
+}
+function memCalc(src){const g=k=>$('#f_'+k);
+  if(src==='Plan'||src==='StartDate'){const p=DB.plans.find(x=>x.Name===g('Plan').value);if(p){if(src==='Plan')g('TotalFees').value=p.Price;if(g('StartDate').value)g('ExpiryDate').value=addDur(g('StartDate').value,n(p.Duration),p.Unit);}}
+  const fin=n(g('TotalFees').value)-n(g('Discount').value)+n(MC.carry),paid=g('Paid')?n(g('Paid').value):n(MC.paid);g('Final').value=fin;g('Pend').value=fin-paid;}
+function pickPhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const s=Math.min(1,200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);PH=c.toDataURL('image/jpeg',.6);$('#pv').src=PH;$('#pv').style.display='block';};im.src=e.target.result;};r.readAsDataURL(f);}
+async function saveMember(id){const o=val(MF);if(!o)return;if(id)o.MemberID=id;if(PH)o.Photo=PH;await call('saveMember',{m:o});closeM();V[page]();toast('Member saved');}
+function delMember(id){ask(`Delete <b>${esc(mem(id).Name)}</b> (${id})? Payment records are kept for accounting.`,async()=>{await call('deleteMember',{id});V[page]();toast('Member deleted');});}
+async function viewMember(id){
+  const m=mem(id);const [att,ph]=await Promise.all([call('memberAtt',{id}),m.HasPhoto?call('getPhoto',{id}):'']);PROF={id,att,ph};
+  const pay=DB.payments.filter(x=>x.MemberID===id).reverse(),hist=DB.history.filter(h=>h.MemberID===id),pr=att.filter(a=>a.Status==='Present').length,pc=att.length?Math.round(pr/att.length*100):0;
+  const info=[['Mobile',m.Mobile],['WhatsApp',m.WhatsApp],['Email',m.Email],['Gender',m.Gender],['DOB',m.DOB],['Joined',m.JoinDate],['Plan',m.Plan],['Start',m.StartDate],['Expiry',m.ExpiryDate],['Total Fees',money(m.TotalFees)],['Discount',money(m.Discount)],['Payable',money(m.Payable)],['Paid',money(m.Paid)],['Pending',money(m.Pending)],['Emergency',m.Emergency],['Address',m.Address],['Medical Notes',m.Medical]];
+  modal(`<div class="bar"><div class="gap" style="align-items:center"><div class="av">${ph?`<img src="${ph}">`:esc((m.Name||'?')[0])}</div><div><h2>${esc(m.Name)}</h2><span class="mut">${id}</span> ${bd(m.MStatus)}</div></div><div class="gap"><button class="btn sm g" onclick="printMember('${id}')">🖨 Print</button><button class="btn sm g" onclick="memberForm('${id}')">Edit</button><button class="btn sm k" onclick="payForm('${id}')">Add Payment</button><button class="btn sm" onclick="renewForm('${id}')">Renew</button><button class="btn sm w" onclick="waMenu('${id}')">WhatsApp</button></div></div>
+  <div class="grid">${info.map(i=>`<div><label>${i[0]}</label>${esc(i[1]||'-')}</div>`).join('')}</div>
+  <h3 style="margin-top:18px">Payment History</h3><div class="tw">${tbl([['ID',p=>p.PaymentID],['Date',p=>p.Date],['Received',p=>money(p.Received)],['Mode',p=>p.Mode],['Balance',p=>money(p.Balance)],['Status',p=>bd(p.Status)],['',p=>`<button class="btn sm g" onclick="receipt('${p.PaymentID}')">Receipt</button>`]],pay)}</div>
+  <h3 style="margin-top:18px">Membership History</h3><div class="tw">${tbl([['Plan',h=>esc(h.Plan)],['Start',h=>h.StartDate],['Expiry',h=>h.ExpiryDate],['Payable',h=>money(h.Payable)],['Paid',h=>money(h.Paid)],['Pending',h=>money(h.Pending)]],hist.concat([{Plan:m.Plan+' (current)',StartDate:m.StartDate,ExpiryDate:m.ExpiryDate,Payable:m.Payable,Paid:m.Paid,Pending:m.Pending}]))}</div>
+  <h3 style="margin-top:18px">Attendance – ${pc}% present (${pr}/${att.length} days marked)</h3><div class="tw" style="max-height:220px;overflow:auto">${tbl([['Date',a=>a.Date],['Status',a=>bd(a.Status)]],att.slice(0,60))}</div><div class="gap end"><button class="btn g" onclick="closeM()">Close</button></div>`,true);
+}
+function printMember(id){const m=mem(id),a=PROF.id===id?PROF.att:[],rows=[['Member ID',id],['Name',m.Name],['Mobile',m.Mobile],['WhatsApp',m.WhatsApp],['Email',m.Email],['Gender',m.Gender],['DOB',m.DOB],['Address',m.Address],['Joined',m.JoinDate],['Plan',m.Plan],['Start',m.StartDate],['Expiry',m.ExpiryDate],['Status',m.MStatus],['Total Fees',money(m.TotalFees)],['Discount',money(m.Discount)],['Payable',money(m.Payable)],['Paid',money(m.Paid)],['Pending',money(m.Pending)],['Emergency',m.Emergency],['Medical Notes',m.Medical],['Attendance',a.length?Math.round(a.filter(x=>x.Status==='Present').length/a.length*100)+'% present':'-']];
+  doPrint(`<div style="font-family:Arial;max-width:700px;margin:auto"><h2 style="text-align:center">${GYM} – Member Details</h2>${PROF.ph&&PROF.id===id?`<img src="${PROF.ph}" style="width:90px;height:90px;object-fit:cover;float:right">`:''}<table style="width:100%;border-collapse:collapse">${rows.map(r=>`<tr><td style="padding:5px;border-bottom:1px solid #ddd;color:#555;width:35%">${r[0]}</td><td style="padding:5px;border-bottom:1px solid #ddd"><b>${esc(r[1]||'-')}</b></td></tr>`).join('')}</table><h3>Payments</h3><table style="width:100%;border-collapse:collapse;font-size:13px">${DB.payments.filter(p=>p.MemberID===id).map(p=>`<tr><td>${p.PaymentID}</td><td>${p.Date}</td><td>${money(p.Received)}</td><td>${p.Mode}</td><td>${money(p.Balance)}</td></tr>`).join('')}</table></div>`);}
+
+/* ===== plans ===== */
+function vPlans(){$('#view').innerHTML=`<div class="bar"><h2>Membership Plans</h2><button class="btn" onclick="planForm()">+ Add Plan</button></div><div class="card tw">${tbl([['Plan',p=>`<b>${esc(p.Name)}</b>`],['Duration',p=>p.Duration+' '+p.Unit],['Price',p=>money(p.Price)],['Description',p=>esc(p.Description)],['Status',p=>bd(p.Status)],['',p=>`<span class="gap"><button class="btn sm g" onclick="planForm('${p.PlanID}')">Edit</button><button class="btn sm r" onclick="delPlan('${p.PlanID}')">Delete</button></span>`]],DB.plans)}</div>`;}
+function planForm(id){const p=id?DB.plans.find(x=>x.PlanID===id):{Duration:1,Unit:'Months',Price:0,Status:'Active'};MF=[{k:'Name',l:'Plan Name',r:1},{k:'Duration',l:'Duration',t:'number',r:1},{k:'Unit',l:'Unit',t:'select',o:['Days','Months']},{k:'Price',l:'Plan Price',t:'number'},{k:'Status',l:'Status',t:'select',o:['Active','Inactive']},{k:'Description',l:'Description',t:'textarea',full:1}];
+  modal(`<h3>${id?'Edit':'Add'} Plan</h3><div class="grid">${MF.map(f=>fld(f,p)).join('')}</div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="savePlan('${id||''}')">Save</button></div>`);}
+async function savePlan(id){const o=val(MF);if(!o)return;if(id)o.PlanID=id;await call('savePlan',{plan:o});closeM();V[page]();toast('Plan saved');}
+function delPlan(id){ask('Delete this plan? Existing members keep their plan name.',async()=>{await call('deletePlan',{id});V[page]();});}
+
+/* ===== payments ===== */
+function vPay(){const f=DB.today.slice(0,8)+'01';
+  $('#view').innerHTML=`<div class="bar"><h2>Fees & Payments</h2><button class="btn" onclick="payForm()">+ Record Payment</button></div><div class="card"><div class="gap"><div><label>From</label><input type="date" id="pf" value="${f}" onchange="pList()"></div><div><label>To</label><input type="date" id="pto" value="${DB.today}" onchange="pList()"></div><div><label>Search</label><input id="pq" placeholder="Member, ID, receipt" oninput="pList()"></div></div><div id="psum" style="margin:12px 0;font-weight:600"></div><div class="tw" id="ptb"></div></div><div class="card"><h3>Pending Fees</h3><div class="tw" id="pend"></div></div>`;pList();
+  $('#pend').innerHTML=tbl([['Member',m=>`<b>${esc(m.Name)}</b><small>${m.MemberID} · ${esc(m.Mobile)}</small>`],['Payable',m=>money(m.Payable)],['Paid',m=>money(m.Paid)],['Pending',m=>`<b style="color:var(--bad)">${money(m.Pending)}</b>`],['',m=>`<span class="gap"><button class="btn sm k" onclick="payForm('${m.MemberID}')">Collect</button>${waBtn(m.MemberID,'pending')}</span>`]],DB.members.filter(m=>n(m.Pending)>0).sort((a,b)=>b.Pending-a.Pending));}
+function pList(){const f=$('#pf').value,t=$('#pto').value,q=$('#pq').value.toLowerCase();const L=DB.payments.filter(p=>(!f||p.Date>=f)&&(!t||p.Date<=t)&&(p.MemberName+p.MemberID+p.PaymentID).toLowerCase().includes(q)).reverse();
+  $('#psum').textContent='Collected in range: '+money(L.reduce((a,p)=>a+n(p.Received),0))+' ('+L.length+' payments)';
+  $('#ptb').innerHTML=tbl([['Receipt',p=>p.PaymentID],['Date',p=>p.Date],['Member',p=>`${esc(p.MemberName)}<small>${p.MemberID}</small>`],['Plan',p=>esc(p.Plan)],['Payable',p=>money(p.Payable)],['Received',p=>`<b>${money(p.Received)}</b>`],['Mode',p=>`${p.Mode}<small>${esc(p.Reference)}</small>`],['Balance',p=>money(p.Balance)],['Status',p=>bd(p.Status)],['',p=>`<button class="btn sm g" onclick="receipt('${p.PaymentID}')">Receipt</button>`]],L);}
+function payForm(id){
+  modal(`<h3>Record Payment</h3><div class="grid"><div class="full"><label>Member *</label><input id="f_mem" list="dl" value="${id?id+' — '+esc(mem(id).Name):''}" placeholder="Type name or ID" oninput="payInfo()"><datalist id="dl">${DB.members.map(m=>`<option value="${m.MemberID} — ${esc(m.Name)}">`).join('')}</datalist></div><div class="full" id="pinfo"></div>
+  <div><label>Payment Date</label><input type="date" id="f_date" value="${DB.today}"></div><div><label>Amount Received *</label><input type="number" min="0" id="f_amt"></div><div><label>Payment Mode</label><select id="f_mode">${MODES.map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Transaction Reference</label><input id="f_ref"></div><div class="full"><label>Notes</label><input id="f_notes"></div></div><p class="mut">Partial, advance and installment payments are supported – the balance updates automatically.</p><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="savePay()">Save & Receipt</button></div>`);payInfo();}
+const pid=()=>($('#f_mem').value.split(' — ')[0]||'').trim();
+function payInfo(){const m=mem(pid());$('#pinfo').innerHTML=m.MemberID?`<div class="card" style="margin:0;background:#f9fafb">Plan: <b>${esc(m.Plan)}</b> · Payable ${money(m.Payable)} · Paid ${money(m.Paid)} · <b style="color:${n(m.Pending)>0?'var(--bad)':'var(--ok)'}">${n(m.Pending)<0?'Advance '+money(-m.Pending):'Pending '+money(m.Pending)}</b></div>`:'';}
+async function savePay(){if(!mem(pid()).MemberID)return toast('Select a valid member',1);const amt=n($('#f_amt').value);if(amt<=0)return toast('Enter a valid amount',1);
+  const r=await call('addPayment',{memberId:pid(),date:$('#f_date').value,amount:amt,mode:$('#f_mode').value,ref:$('#f_ref').value,notes:$('#f_notes').value});closeM();V[page]();toast('Payment recorded');receipt(r.paymentId);}
+const rcpt=p=>`<div style="font-family:Arial;max-width:420px;margin:auto;padding:20px;border:1px dashed #999;color:#111"><h2 style="text-align:center;margin:0">${GYM}</h2><p style="text-align:center;margin:4px 0 14px">Payment Receipt</p><table style="width:100%;font-size:14px">${[['Receipt No',p.PaymentID],['Date',p.Date],['Member',p.MemberName+' ('+p.MemberID+')'],['Plan',p.Plan],['Total Fees',money(p.TotalFees)],['Discount',money(p.Discount)],['Payable',money(p.Payable)],['Amount Received',money(p.Received)],['Mode',p.Mode+(p.Reference?' / '+p.Reference:'')],['Balance',money(p.Balance)],['Status',p.Status]].map(r=>`<tr><td style="padding:4px 0;color:#555">${r[0]}</td><td style="text-align:right"><b>${esc(r[1])}</b></td></tr>`).join('')}</table><p style="text-align:center;margin-top:16px;font-size:12px">Thank you!</p></div>`;
+function receipt(id){const p=DB.payments.find(x=>x.PaymentID===id);if(!p)return;modal(rcpt(p)+`<div class="gap end"><button class="btn g" onclick="closeM()">Close</button><button class="btn w" onclick="wa('${p.MemberID}','payment','${id}')">WhatsApp Confirmation</button><button class="btn k" onclick="doPrint(rcpt(DB.payments.find(x=>x.PaymentID==='${id}')))">🖨 Print</button></div>`);}
+
+/* ===== attendance ===== */
+function vAtt(){ATTD=ATTD||DB.today;$('#view').innerHTML=`<div class="bar"><h2>Attendance</h2><div class="gap"><div><label>Date</label><input type="date" id="ad" value="${ATTD}" onchange="ATTD=this.value;loadAtt()"></div><div><label>Search member</label><input id="aq" placeholder="Name, mobile or ID" oninput="attList()"></div></div></div><div class="card"><div id="achips" class="gap" style="margin-bottom:10px"></div><div id="alist"></div></div>`;loadAtt();}
+async function loadAtt(){ATT=await call('attDay',{date:ATTD},{quiet:1});attList();}
+function attList(){if(!$('#aq'))return;const q=$('#aq').value.toLowerCase(),c=s=>ATT.filter(a=>a.Status===s).length;
+  $('#achips').innerHTML=`${bd('Present')} ${c('Present')} ${bd('Absent')} ${c('Absent')} ${bd('Leave')} ${c('Leave')} <span class="mut">Unmarked ${DB.members.filter(m=>m.MStatus!=='Inactive').length-ATT.length}</span>`;
+  $('#alist').innerHTML=DB.members.filter(m=>m.MStatus!=='Inactive'&&(m.Name+m.Mobile+m.MemberID).toLowerCase().includes(q)).map(m=>{const cur=(ATT.find(a=>a.MemberID===m.MemberID)||{}).Status;
+    return `<div class="li"><span><b>${esc(m.Name)}</b><small>${m.MemberID} · ${bd(m.MStatus)}</small></span><span class="gap">${[['Present','w'],['Absent','r'],['Leave','k']].map(s=>`<button class="btn sm ${cur===s[0]?s[1]:'g'}" onclick="mark('${m.MemberID}','${s[0]}')">${s[0]}</button>`).join('')}</span></div>`;}).join('')||'<div class="mut">No members</div>';}
+async function mark(id,s){const cur=(ATT.find(a=>a.MemberID===id)||{}).Status,ns=cur===s?'':s;ATT=ATT.filter(a=>a.MemberID!==id);if(ns)ATT.push({MemberID:id,Status:ns,Date:ATTD});attList();dirty=true;
+  try{await call('mark',{memberId:id,name:mem(id).Name,date:ATTD,status:ns},{quiet:1});}catch(e){loadAtt();}}
+
+/* ===== renewals ===== */
+function vRen(){const ex=DB.members.filter(m=>m.MStatus==='Expiring Soon'),ed=DB.members.filter(m=>m.MStatus==='Expired');
+  const cols=[['Member',m=>`<b>${esc(m.Name)}</b><small>${m.MemberID} · ${esc(m.Mobile)}</small>`],['Plan',m=>esc(m.Plan)],['Expiry',m=>m.ExpiryDate],['Days',m=>daysLeft(m)],['Pending',m=>money(m.Pending)],['',m=>`<span class="gap"><button class="btn sm" onclick="renewForm('${m.MemberID}')">Renew</button>${waBtn(m.MemberID,'expiry')}</span>`]];
+  $('#view').innerHTML=`<div class="bar"><h2>Membership Renewals</h2></div><div class="card"><h3>Expiring within 7 days (${ex.length})</h3><div class="tw">${tbl(cols,ex)}</div></div><div class="card"><h3>Expired (${ed.length})</h3><div class="tw">${tbl(cols,ed)}</div></div><div class="card"><h3>Renewal history (archived terms)</h3><div class="tw">${tbl([['Member',h=>`${esc(h.MemberName)}<small>${h.MemberID}</small>`],['Old Plan',h=>esc(h.Plan)],['Start',h=>h.StartDate],['Expiry',h=>h.ExpiryDate],['Paid',h=>money(h.Paid)],['Pending',h=>money(h.Pending)],['Archived',h=>h.ArchivedOn]],DB.history.slice().reverse().slice(0,50))}</div></div>`;}
+function renewForm(id){const m=mem(id),act=DB.plans.filter(p=>p.Status!=='Inactive').map(p=>p.Name),start=m.ExpiryDate>=DB.today?m.ExpiryDate:DB.today,v={Plan:act.includes(m.Plan)?m.Plan:act[0],StartDate:start,Discount:0,Paid:0,Mode:'Cash'};
+  MC={carry:n(m.Pending),paid:0};PH='';
+  MF=[{k:'Plan',l:'New Membership Plan',t:'select',o:act,h:1},{k:'StartDate',l:'Start Date',t:'date',h:1,r:1},{k:'ExpiryDate',l:'Expiry Date',t:'date',r:1},{k:'TotalFees',l:'Plan Fees',t:'number',h:1},{k:'Discount',l:'Discount',t:'number',h:1},{k:'Final',l:'Final Payable (incl. carried balance)',ro:1},{k:'Paid',l:'Renewal Payment Now',t:'number',h:1},{k:'Mode',l:'Payment Mode',t:'select',o:MODES},{k:'Reference',l:'Transaction Reference'},{k:'Pend',l:'Pending After Payment',ro:1}];
+  modal(`<h3>Renew – ${esc(m.Name)} (${id})</h3><p class="mut">Current: ${esc(m.Plan)} · expires ${m.ExpiryDate} · balance carried forward: ${money(m.Pending)}. The old term is archived, not deleted.</p><div class="grid">${MF.map(f=>fld(f,v)).join('')}</div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveRenew('${id}')">Renew Membership</button></div>`);memCalc('Plan');}
+async function saveRenew(id){const o=val(MF);if(!o)return;const r=await call('renew',{memberId:id,plan:o.Plan,start:o.StartDate,expiry:o.ExpiryDate,fees:o.TotalFees,discount:o.Discount,paid:o.Paid,mode:o.Mode,ref:o.Reference});
+  modal(`<h3>✅ Membership renewed</h3><p>${esc(mem(id).Name)} is now valid until <b>${mem(id).ExpiryDate}</b>.</p><div class="gap end"><button class="btn g" onclick="closeM()">Close</button>${r.paymentId?`<button class="btn g" onclick="receipt('${r.paymentId}')">Receipt</button>`:''}<button class="btn w" onclick="wa('${id}','renewal')">WhatsApp Confirmation</button></div>`);V[page]();}
+
+/* ===== expenses ===== */
+function vExp(){const f=DB.today.slice(0,8)+'01';$('#view').innerHTML=`<div class="bar"><h2>Expenses</h2><button class="btn" onclick="expForm()">+ Add Expense</button></div><div class="card"><div class="gap"><div><label>From</label><input type="date" id="ef" value="${f}" onchange="eList()"></div><div><label>To</label><input type="date" id="et" value="${DB.today}" onchange="eList()"></div><div><label>Category</label><select id="ec" onchange="eList()"><option value="">All</option>${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div><div id="esum" style="margin:12px 0;font-weight:600"></div><div class="tw" id="etb"></div></div>`;eList();}
+function eList(){const f=$('#ef').value,t=$('#et').value,c=$('#ec').value,L=DB.expenses.filter(e=>(!f||e.Date>=f)&&(!t||e.Date<=t)&&(!c||e.Category===c)).sort((a,b)=>a.Date<b.Date?1:-1);
+  $('#esum').textContent='Total: '+money(L.reduce((a,e)=>a+n(e.Amount),0))+' ('+L.length+' entries)';
+  $('#etb').innerHTML=tbl([['ID',e=>e.ExpenseID],['Date',e=>e.Date],['Category',e=>esc(e.Category)],['Description',e=>esc(e.Description)],['Amount',e=>`<b>${money(e.Amount)}</b>`],['Mode',e=>e.Mode],['Notes',e=>esc(e.Notes)],['',e=>`<span class="gap"><button class="btn sm g" onclick="expForm('${e.ExpenseID}')">Edit</button><button class="btn sm r" onclick="delExp('${e.ExpenseID}')">Delete</button></span>`]],L);}
+function expForm(id){const e=id?DB.expenses.find(x=>x.ExpenseID===id):{Date:DB.today,Category:'Rent',Mode:'Cash'};
+  MF=[{k:'Date',l:'Expense Date',t:'date',r:1},{k:'Category',l:'Category',t:'select',o:CATS},{k:'Description',l:'Description'},{k:'Amount',l:'Amount',t:'number',r:1},{k:'Mode',l:'Payment Mode',t:'select',o:MODES},{k:'Notes',l:'Notes',t:'textarea',full:1}];
+  modal(`<h3>${id?'Edit':'Add'} Expense</h3><div class="grid">${MF.map(f=>fld(f,e)).join('')}</div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveExp('${id||''}')">Save</button></div>`);}
+async function saveExp(id){const o=val(MF);if(!o)return;if(id)o.ExpenseID=id;await call('saveExpense',{e:o});closeM();V[page]();toast('Expense saved');}
+function delExp(id){ask('Delete this expense?',async()=>{await call('deleteExpense',{id});V[page]();});}
+
+/* ===== reports ===== */
+function vRep(){const f=DB.today.slice(0,8)+'01';$('#view').innerHTML=`<div class="bar"><h2>Reports & Analytics</h2></div><div class="card"><div class="gap"><div><label>Report</label><select id="rt">${REP.map(r=>`<option value="${r[0]}">${r[1]}</option>`).join('')}</select></div><div><label>From</label><input type="date" id="rf" value="${f}"></div><div><label>To</label><input type="date" id="rto" value="${DB.today}"></div><button class="btn" onclick="runRep()">Run Report</button><button class="btn g" onclick="csv()">⬇ Export CSV</button><button class="btn g" onclick="printRep()">🖨 Print</button></div><p class="mut" style="margin:10px 0 0">Profit = payments actually received − recorded expenses. Pending fees are never counted as revenue.</p></div><div class="card tw" id="rout"><span class="mut">Choose a report and press Run.</span></div>`;}
+async function runRep(){const t=$('#rt').value,r=await call('report',{type:t,from:$('#rf').value,to:$('#rto').value});RPT={cols:r.cols,rows:r.rows,name:t+'_'+$('#rf').value+'_'+$('#rto').value};
+  $('#rout').innerHTML=`<h3>${REP.find(x=>x[0]===t)[1]}</h3>`+tbl(r.cols.map((c,i)=>[c,x=>{const v=x[i];return typeof v==='number'&&/Amount|Income|Expenses|Profit|Received|Total$|Payable|Paid|Outstanding|Pending/.test(c)&&!/Days|Entries|Payments/.test(c)?money(v):esc(v);}]),r.rows);}
+function csv(){if(!RPT.rows.length)return toast('Run a report first',1);const s=[RPT.cols].concat(RPT.rows).map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+s],{type:'text/csv'}));a.download=RPT.name+'.csv';a.click();}
+function printRep(){if(!RPT.rows.length)return toast('Run a report first',1);doPrint(`<div style="font-family:Arial"><h2>${GYM}</h2>${$('#rout').innerHTML.replace(/<th>/g,'<th style="text-align:left;border-bottom:1px solid #000;padding:4px">').replace(/<td>/g,'<td style="padding:4px;border-bottom:1px solid #ddd">')}</div>`);}
+
+/* ===== init ===== */
+$('#nav').innerHTML=NAV.map(x=>`<a data-p="${x[0]}" onclick="go('${x[0]}')"><span>${x[2]}</span>${x[1]}</a>`).join('');
+$('#dt').textContent=new Date().toDateString();
+function startApp(first){call('bootstrap').then(()=>go(first||'dashboard')).catch(()=>{$('#view').innerHTML='<div class="card">Could not load data. Run setup() once in the Apps Script editor and redeploy.</div>';});}
+</script>
+<script>
+/* ===== SETTINGS + LOGIN + ACCESS CONTROL MODULE (added) ===== */
+(function(){
+var TOK='',ME=null,SET=null,MEMT='',USERS=[],TAB='profile',LOGO;
+var SK='gm_tok',RANK={none:0,view:1,edit:2};
+var ML={dashboard:'Dashboard',members:'Members',plans:'Membership Plans',payments:'Payments',attendance:'Attendance',renewals:'Renewals',expenses:'Expenses',reports:'Reports',settings:'Settings'};
+function gid(i){return document.getElementById(i);}
+var store={
+  get:function(){var v='';try{v=localStorage.getItem(SK)||sessionStorage.getItem(SK)||'';}catch(e){}return v||MEMT;},
+  set:function(t,rem){MEMT=t;try{localStorage.removeItem(SK);sessionStorage.removeItem(SK);(rem?localStorage:sessionStorage).setItem(SK,t);}catch(e){}},
+  clear:function(){MEMT='';try{localStorage.removeItem(SK);sessionStorage.removeItem(SK);}catch(e){}}
+};
+function raw(a,p){return new Promise(function(ok,no){google.script.run.withSuccessHandler(function(r){try{var j=JSON.parse(r);j.ok?ok(j.data):no(new Error(j.error));}catch(e){no(e);}}).withFailureHandler(function(e){no(new Error((e&&e.message)||String(e)));}).api(a,Object.assign({},p||{},{_t:TOK}));});}
+function can(mod,lvl){if(!ME)return false;if(ME.Role==='Super Admin')return true;var r=((SET&&SET.perms||{})[ME.Role]||{})[mod]||'none';return RANK[r]>=RANK[lvl||'view'];}
+function isSA(){return !!ME&&ME.Role==='Super Admin';}
+
+/* ---- wrap existing functions (existing code is NOT edited) ---- */
+var _call=window.call,_go=window.go;
+window.call=async function(a,p,o){try{return await _call(a,Object.assign({},p||{},{_t:TOK}),o);}catch(e){if(e&&/Session expired/i.test(e.message||''))setTimeout(logout,50);throw e;}};
+window.go=function(p){if(!can(p,'view')){toast('You do not have access to '+(ML[p]||p),1);return;}_go(p);};
+window.rcptNo=function(id){var pre=SET&&SET.financial&&SET.financial.ReceiptPrefix,m=String(id).match(/(\d+)$/);return pre&&m?pre+m[1]:id;};
+
+/* ---- login screen ---- */
+function shell(h){var el=gid('gmLogin');if(!el){el=document.createElement('div');el.id='gmLogin';document.body.appendChild(el);}el.innerHTML=h;return el;}
+function splash(){shell('<div class="gl-spin"></div>');}
+function showLogin(info){
+  var g=(info&&info.gym)||{},setup=!!(info&&info.needsSetup),nm=esc(g.GymName||GYM);
+  shell('<div class="gl-wrap"><div class="gl-hero"><div class="gl-logo">'+(g.Logo?'<img src="'+esc(g.Logo)+'" alt="">':'🏋️')+'</div><h1>'+nm+'</h1><p>Members, fees, attendance and reports – everything your gym needs, in one secure place.</p><ul><li>📊 Live dashboard &amp; reports</li><li>💳 Fees, receipts &amp; renewals</li><li>🔐 Role-based secure access</li></ul></div>'+
+  '<form class="gl-card" id="glForm" autocomplete="on"><h2>'+(setup?'Create Super Admin':'Welcome back 👋')+'</h2><p class="gl-sub">'+(setup?'First-time setup – create the owner account.':'Sign in to continue to your dashboard')+'</p>'+
+  (setup?'<label>Full Name</label><input id="gl_name" placeholder="Your name" autocomplete="name">':'')+
+  '<label>Username</label><input id="gl_u" placeholder="username" autocomplete="username" autocapitalize="none" spellcheck="false">'+
+  '<label>Password</label><div class="gl-pw"><input id="gl_p" type="password" placeholder="••••••••" autocomplete="'+(setup?'new-password':'current-password')+'"><button type="button" id="gl_eye" title="Show / hide">👁</button></div>'+
+  (setup?'<label>Confirm Password</label><input id="gl_p2" type="password" placeholder="Repeat password" autocomplete="new-password">':'<label class="gl-rem"><input type="checkbox" id="gl_rem" checked> Keep me signed in on this device</label>')+
+  '<div class="gl-err" id="gl_err"></div><button class="gl-btn" id="gl_go">'+(setup?'Create account &amp; continue':'Sign in')+'</button><div class="gl-foot">© '+new Date().getFullYear()+' '+nm+'</div></form></div>');
+  var err=gid('gl_err'),btn=gid('gl_go'),label=setup?'Create account & continue':'Sign in';
+  gid('gl_eye').onclick=function(){var i=gid('gl_p');i.type=i.type==='password'?'text':'password';};
+  gid('glForm').onsubmit=async function(e){e.preventDefault();err.textContent='';
+    var u=gid('gl_u').value.trim(),pw=gid('gl_p').value,pl={username:u,password:pw};
+    if(!u||!pw){err.textContent='Please enter username and password';return;}
+    if(setup){var fn=gid('gl_name').value.trim();if(!fn){err.textContent='Please enter your full name';return;}if(pw.length<6){err.textContent='Password must be at least 6 characters';return;}if(pw!==gid('gl_p2').value){err.textContent='Passwords do not match';return;}pl.name=fn;}
+    btn.disabled=true;btn.textContent=setup?'Creating…':'Signing in…';
+    try{var r=await raw(setup?'setupAdmin':'login',pl);TOK=r.token;store.set(TOK,setup||gid('gl_rem').checked);ME=r.user;await enter();}
+    catch(x){err.textContent=x.message||'Login failed';btn.disabled=false;btn.textContent=label;}
+  };
+  setTimeout(function(){var f=gid(setup?'gl_name':'gl_u');if(f)f.focus();},60);
+}
+async function enter(){
+  SET=await raw('getSettings');
+  var el=gid('gmLogin');if(el)el.remove();
+  document.body.classList.add('gm-in');
+  brand();nav();hdr();
+  var fp=['dashboard','members','plans','payments','attendance','renewals','expenses','reports','settings'].find(function(p){return can(p,'view');});
+  if(!fp){$('#view').innerHTML='<div class="card">No modules are assigned to your role yet. Please contact the Super Admin.</div>';$('#title').textContent='Access';return;}
+  startApp(fp);
+}
+function logout(){
+  var t=TOK;TOK='';ME=null;SET=null;store.clear();
+  try{google.script.run.withFailureHandler(function(){}).api('logout',{_t:t});}catch(e){}
+  DB={members:[],plans:[],payments:[],expenses:[],history:[],dash:{},today:''};
+  closeM();$('#view').innerHTML='';$('#title').textContent='';document.body.classList.remove('gm-in');
+  splash();raw('authInfo').then(showLogin).catch(function(){showLogin({gym:{}});});
+}
+function brand(){GYM=(SET.profile&&SET.profile.GymName)||GYM;document.title=GYM;$('.brand').innerHTML=(SET.logo?'<img class="gm-bl" src="'+esc(SET.logo)+'" alt="">':'🏋️')+' <span>'+esc(GYM)+'</span>';}
+function nav(){
+  if(!NAV.some(function(x){return x[0]==='settings';}))NAV.push(['settings','Settings','⚙️']);
+  $('#nav').innerHTML=NAV.filter(function(x){return can(x[0],'view');}).map(function(x){return '<a data-p="'+x[0]+'" onclick="go(\''+x[0]+'\')"><span>'+x[2]+'</span>'+x[1]+'</a>';}).join('');
+  var w=gid('gmWho');if(!w){w=document.createElement('div');w.id='gmWho';$('#side').appendChild(w);}
+  var nm=ME.FullName||ME.Username;
+  w.innerHTML='<div class="gm-u"><div class="av">'+esc(nm[0].toUpperCase())+'</div><div><b>'+esc(nm)+'</b><small>'+esc(ME.Role)+'</small></div></div><button class="btn g" style="width:100%" onclick="GM.logout()">⎋ Logout</button>';
+  document.querySelectorAll('#side a').forEach(function(a){a.classList.toggle('on',a.dataset.p===page);});
+}
+function hdr(){if(gid('gmLo'))return;var b=document.createElement('button');b.id='gmLo';b.className='btn g sm';b.textContent='⎋ Logout';b.onclick=logout;$('header').appendChild(b);}
+
+/* ---- form helpers ---- */
+function F(id,l,v,o){o=o||{};var d=o.dis?' disabled':'',i;
+  if(o.sel)i='<select id="'+id+'"'+d+'>'+o.sel.map(function(x){return '<option '+(x===v?'selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select>';
+  else if(o.ta)i='<textarea id="'+id+'" rows="2"'+d+'>'+esc(v)+'</textarea>';
+  else i='<input id="'+id+'" type="'+(o.t||'text')+'" value="'+esc(v)+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+d+'>';
+  return '<div class="'+(o.full?'full':'')+'"><label>'+l+(o.r?' *':'')+'</label>'+i+(o.hint?'<small>'+o.hint+'</small>':'')+'</div>';}
+function gv(id){return gid(id).value.trim();}
+var YN=['Yes','No'];
+
+/* ---- Settings page ---- */
+V.settings=async function(){SET=await call('getSettings');draw();};
+function draw(){
+  var T=[['profile','🏢 Gym Profile'],['attendance','✅ Attendance'],['access','🔐 Staff & Permissions'],['financial','💰 Financial'],['account','👤 My Account']];
+  $('#view').innerHTML='<div class="gm-tabs">'+T.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" onclick="GM.tab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div><div id="gmTab"></div>';
+  ({profile:tProfile,attendance:tAtt,access:tAccess,financial:tFin,account:tAcct})[TAB]();
+}
+function tProfile(){var p=SET.profile,ed=can('settings','edit'),d=!ed;LOGO=undefined;
+  $('#gmTab').innerHTML='<div class="card"><h3>🏢 Gym Profile</h3><div class="grid">'+
+  F('p_GymName','Gym Name',p.GymName,{r:1,dis:d})+F('p_OwnerName','Owner Name',p.OwnerName,{dis:d})+
+  F('p_Mobile','Mobile Number',p.Mobile,{t:'tel',dis:d})+F('p_WhatsApp','WhatsApp Number',p.WhatsApp,{t:'tel',dis:d})+F('p_Email','Email Address',p.Email,{t:'email',dis:d})+
+  F('p_Address','Full Address',p.Address,{ta:1,full:1,dis:d})+
+  F('p_City','City',p.City,{dis:d})+F('p_State','State',p.State,{dis:d})+F('p_Pin','PIN Code',p.Pin,{dis:d})+
+  F('p_GST','GST Number (optional)',p.GST,{dis:d})+F('p_Website','Website (optional)',p.Website,{dis:d})+
+  '<div class="full"><label>Gym Logo</label><div class="gap" style="align-items:center"><div class="gm-logo" id="p_prev">'+(SET.logo?'<img src="'+esc(SET.logo)+'">':'🏋️')+'</div><input type="file" accept="image/*" style="max-width:260px" onchange="GM.pickLogo(this)"'+(d?' disabled':'')+'><button class="btn sm r" onclick="GM.rmLogo()"'+(d?' disabled':'')+'>Remove</button></div><small>PNG / JPG – auto-resized. Shown on the login screen and sidebar.</small></div></div>'+
+  (ed?'<div class="gap end"><button class="btn" onclick="GM.saveProfile()">Save Profile</button></div>':'<p class="mut">View only – you do not have permission to edit.</p>')+'</div>';}
+function pickLogo(inp){var f=inp.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){var im=new Image();im.onload=function(){
+  var s=Math.min(1,200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  var u=c.toDataURL('image/png');
+  if(u.length>40000){var c2=document.createElement('canvas');c2.width=c.width;c2.height=c.height;var x=c2.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(c,0,0);u=c2.toDataURL('image/jpeg',.7);}
+  if(u.length>44000){toast('Logo is too complex – choose a simpler image',1);return;}
+  LOGO=u;gid('p_prev').innerHTML='<img src="'+u+'">';};im.onerror=function(){toast('Could not read this image',1);};im.src=e.target.result;};r.readAsDataURL(f);}
+function rmLogo(){LOGO='';gid('p_prev').innerHTML='🏋️';}
+async function saveProfile(){var d={};['GymName','OwnerName','Mobile','WhatsApp','Email','Address','City','State','Pin','GST','Website'].forEach(function(k){d[k]=gv('p_'+k);});
+  if(!d.GymName){toast('Gym name is required',1);return;}
+  var pl={section:'profile',data:d};if(LOGO!==undefined)pl.logo=LOGO;
+  SET=await call('saveSettings',pl);brand();toast('Gym profile saved');draw();}
+
+function tAtt(){var a=SET.attendance,ed=can('settings','edit'),d=!ed;
+  $('#gmTab').innerHTML='<div class="card"><h3>✅ Attendance Settings</h3><div class="grid">'+
+  F('a_CheckInEnabled','Enable Check-In',a.CheckInEnabled,{sel:YN,dis:d})+F('a_CheckOutEnabled','Enable Check-Out',a.CheckOutEnabled,{sel:YN,dis:d})+
+  F('a_PreventDuplicate','Prevent Duplicate Check-In',a.PreventDuplicate,{sel:YN,dis:d})+F('a_AllowExpired','Allow Expired Member Attendance',a.AllowExpired,{sel:YN,dis:d})+
+  F('a_StartTime','Attendance Start Time',a.StartTime,{t:'time',dis:d})+F('a_EndTime','Attendance Closing Time',a.EndTime,{t:'time',dis:d})+
+  F('a_Method','Default Attendance Method',a.Method,{sel:['Member ID','Mobile Number','Search by Name'],dis:d})+'</div>'+
+  '<p class="mut">Start / closing time apply to Check-In. “Allow Expired Member Attendance = No” also blocks marking Present for expired members on the Attendance list.</p>'+
+  (ed?'<div class="gap end"><button class="btn" onclick="GM.saveAtt()">Save Attendance Settings</button></div>':'<p class="mut">View only – you do not have permission to edit.</p>')+'</div>';}
+async function saveAtt(){var d={};['CheckInEnabled','CheckOutEnabled','PreventDuplicate','AllowExpired','StartTime','EndTime','Method'].forEach(function(k){d[k]=gv('a_'+k);});
+  SET=await call('saveSettings',{section:'attendance',data:d});toast('Attendance settings saved');draw();}
+
+async function tAccess(){var sa=isSA(),P=SET.perms,R=SET.roles,M=SET.modules;
+  var h='<div class="card"><h3>🔐 Role Permissions</h3><p class="mut">None = hidden · View = can open and read · Edit = can add / change / delete. Super Admin always has full access.</p><div class="tw"><table><thead><tr><th>Module</th>'+R.map(function(r){return '<th>'+r+'</th>';}).join('')+'</tr></thead><tbody>'+
+  M.map(function(m){return '<tr><td><b>'+ML[m]+'</b></td>'+R.map(function(r){return r==='Super Admin'?'<td><span class="b ok">Full access</span></td>':'<td><select class="gm-pm" data-r="'+r+'" data-m="'+m+'"'+(sa?'':' disabled')+'>'+['none','view','edit'].map(function(l){return '<option value="'+l+'"'+(P[r][m]===l?' selected':'')+'>'+l[0].toUpperCase()+l.slice(1)+'</option>';}).join('')+'</select></td>';}).join('')+'</tr>';}).join('')+
+  '</tbody></table></div>'+(sa?'<div class="gap end"><button class="btn" onclick="GM.savePerms()">Save Permissions</button></div>':'<p class="mut">Only the Super Admin can modify permissions and staff accounts.</p>')+'</div><div id="gmUsers"></div>';
+  $('#gmTab').innerHTML=h;
+  if(sa){USERS=await call('getUsers');usersCard();}}
+function usersCard(){gid('gmUsers').innerHTML='<div class="card"><div class="bar"><h3 style="margin:0">👥 Staff Users</h3><button class="btn sm" onclick="GM.userForm()">+ Add User</button></div><div class="tw">'+
+  tbl([['User',function(u){return '<b>'+esc(u.FullName)+'</b><small>'+esc(u.Username)+'</small>';}],['Role',function(u){return esc(u.Role);}],['Status',function(u){return bd(u.Status);}],['',function(u){return '<span class="gap"><button class="btn sm g" onclick="GM.userForm(\''+esc(u.Username)+'\')">Edit</button><button class="btn sm r" onclick="GM.delUser(\''+esc(u.Username)+'\')">Delete</button></span>';}]],USERS)+'</div></div>';}
+async function savePerms(){var o={};SET.roles.forEach(function(r){o[r]={};});document.querySelectorAll('.gm-pm').forEach(function(s){o[s.dataset.r][s.dataset.m]=s.value;});
+  SET=await call('saveSettings',{section:'permissions',data:o});toast('Permissions saved');nav();draw();}
+function userForm(un){var u=un?USERS.find(function(x){return x.Username===un;}):{Role:'Receptionist',Status:'Active'};
+  modal('<h3>'+(un?'Edit':'Add')+' User</h3><div class="grid">'+F('u_name','Full Name',u.FullName||'',{r:1})+F('u_user','Username',u.Username||'',{r:1,dis:!!un,hint:'lowercase letters, numbers, . _ -'})+F('u_role','Role',u.Role,{sel:SET.roles})+F('u_status','Status',u.Status,{sel:['Active','Disabled']})+F('u_pw',un?'New Password (blank = keep)':'Password',"",{t:'password',r:!un,hint:'minimum 6 characters'})+'</div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="GM.saveUser(\''+(un||'')+'\')">Save User</button></div>');}
+async function saveUser(un){var x={Username:gv('u_user'),FullName:gv('u_name'),Role:gv('u_role'),Status:gv('u_status'),Password:gid('u_pw').value};
+  if(!x.FullName||!x.Username){toast('Name and username are required',1);return;}
+  USERS=await call('saveUser',{mode:un?'edit':'new',user:x});closeM();usersCard();toast('User saved');}
+function delUser(un){ask('Delete user <b>'+esc(un)+'</b>? They will no longer be able to login.',async function(){USERS=await call('deleteUser',{username:un});usersCard();toast('User deleted');});}
+
+function tFin(){var f=SET.financial,sa=isSA(),d=!sa,y=+f.FYStartYear,fy=function(x){return 'April '+x+' – March '+(x+1);};
+  $('#gmTab').innerHTML='<div class="card"><h3>💰 General Financial Configuration</h3><div class="grid">'+
+  F('f_cur','Currency','INR (₹)',{sel:['INR (₹)'],dis:1})+F('f_fy','Financial Year',fy(y),{sel:[y-1,y,y+1].map(fy),dis:d})+
+  F('f_rp','Receipt Number Prefix',f.ReceiptPrefix,{dis:d,hint:'Receipts show e.g. '+esc(f.ReceiptPrefix)+'00012'})+F('f_ip','Invoice Number Prefix',f.InvoicePrefix,{dis:d})+'</div>'+
+  (sa?'<div class="gap end"><button class="btn" onclick="GM.saveFin()">Save Financial Settings</button></div>':'<p class="mut">Critical setting – only the Super Admin can modify.</p>')+'</div>';}
+async function saveFin(){SET=await call('saveSettings',{section:'financial',data:{FYStartYear:parseInt(gv('f_fy').replace('April ','')),ReceiptPrefix:gv('f_rp'),InvoicePrefix:gv('f_ip')}});toast('Financial settings saved');draw();}
+
+function tAcct(){$('#gmTab').innerHTML='<div class="card"><h3>👤 My Account</h3><p><b>'+esc(ME.FullName)+'</b> · '+esc(ME.Username)+' · '+bd(ME.Role)+'</p><div class="grid">'+
+  F('c_old','Current Password','',{t:'password'})+F('c_new','New Password','',{t:'password',hint:'minimum 6 characters'})+F('c_new2','Confirm New Password','',{t:'password'})+'</div><div class="gap end"><button class="btn" onclick="GM.chgPw()">Change Password</button><button class="btn g" onclick="GM.logout()">⎋ Logout</button></div></div>';}
+async function chgPw(){if(gid('c_new').value!==gid('c_new2').value){toast('New passwords do not match',1);return;}
+  await call('changePassword',{oldPassword:gid('c_old').value,newPassword:gid('c_new').value});toast('Password changed');tAcct();}
+
+/* ---- Attendance page: Quick Check-In / Check-Out card (existing vAtt untouched) ---- */
+var _vAtt=V.attendance;
+V.attendance=function(){_vAtt();attCard();};
+function attCard(){var A=SET&&SET.attendance;if(!A||!can('attendance','edit')||(A.CheckInEnabled!=='Yes'&&A.CheckOutEnabled!=='Yes'))return;
+  var dl=DB.members.filter(function(m){return m.MStatus!=='Inactive';}).map(function(m){return '<option value="'+m.MemberID+' — '+esc(m.Name)+'">';}).join('');
+  $('#view').insertAdjacentHTML('afterbegin','<div class="card" id="gmCI"><h3>🚪 Quick Check-In / Check-Out</h3><div class="gap"><div><label>Method</label><select id="ci_m" onchange="GM.ciPh()">'+['Member ID','Mobile Number','Search by Name'].map(function(x){return '<option '+(x===A.Method?'selected':'')+'>'+x+'</option>';}).join('')+'</select></div><div style="flex:1;min-width:220px"><label id="ci_l"></label><input id="ci_q" style="width:100%" list="ci_dl" onkeydown="if(event.key===\'Enter\')GM.ci(\'in\')"><datalist id="ci_dl">'+dl+'</datalist></div>'+
+  (A.CheckInEnabled==='Yes'?'<button class="btn w" onclick="GM.ci(\'in\')">Check-In</button>':'')+(A.CheckOutEnabled==='Yes'?'<button class="btn k" onclick="GM.ci(\'out\')">Check-Out</button>':'')+'</div><p class="mut" style="margin:8px 0">Attendance window: '+A.StartTime+' – '+A.EndTime+' · Duplicate check-in '+(A.PreventDuplicate==='Yes'?'blocked':'allowed')+' · Expired members '+(A.AllowExpired==='Yes'?'allowed':'blocked')+'</p><div id="ci_log" class="tw"></div></div>');
+  ciPh();ciLog();}
+function ciPh(){var m=gid('ci_m').value,q=gid('ci_q');gid('ci_l').textContent=m==='Mobile Number'?'Mobile number':m==='Member ID'?'Member ID (e.g. GYM-0001)':'Member name or ID';if(m==='Mobile Number')q.removeAttribute('list');else q.setAttribute('list','ci_dl');}
+async function ciLog(){if(!gid('ci_log'))return;var L=await call('attLog',{date:DB.today},{quiet:1});
+  gid('ci_log').innerHTML='<h3 style="margin:8px 0">Today\'s check-ins ('+L.length+')</h3>'+tbl([['Member',function(x){return '<b>'+esc(x.MemberName)+'</b><small>'+x.MemberID+'</small>';}],['In',function(x){return esc(x.CheckIn||'-');}],['Out',function(x){return esc(x.CheckOut||'-');}]],L.slice().reverse());}
+async function ci(kind){var r=await call(kind==='in'?'checkIn':'checkOut',{query:gid('ci_q').value,method:gid('ci_m').value},{quiet:1});
+  toast(r.message);gid('ci_q').value='';dirty=true;ciLog();if(ATTD===DB.today)loadAtt();gid('ci_q').focus();}
+
+window.GM={tab:function(t){TAB=t;draw();},pickLogo:pickLogo,rmLogo:rmLogo,saveProfile:saveProfile,saveAtt:saveAtt,savePerms:savePerms,userForm:userForm,saveUser:saveUser,delUser:delUser,saveFin:saveFin,chgPw:chgPw,logout:logout,ci:ci,ciPh:ciPh};
+
+/* ---- start: show login first (existing app only loads after a successful login) ---- */
+splash();TOK=store.get();
+raw('authInfo').then(async function(info){if(info.user&&TOK){ME=info.user;try{await enter();}catch(e){store.clear();TOK='';showLogin(info);}}else showLogin(info);}).catch(function(){showLogin({gym:{}});});
+})();
+</script>
+<script>
+/* ===== ACP CLIENT LAYER (added) - notices, lock screen, feature switches, backup page ===== */
+(function(){
+var F={},BN=false,locked=false,inApp=false,DM='This feature has been disabled by your software provider. Please contact them to enable it.',BM='Adding new members has been blocked by your software provider. Please contact them.';
+var IC={'Normal Notification':['ℹ️','#2563eb'],'Important Notice':['❗','#d97706'],'Subscription Expiry Warning':['⏳','#d97706'],'Payment Reminder':['💳','#d97706'],'Feature Disabled Notice':['🚫','#6b7280'],'Account Suspended Notice':['⛔','#dc2626'],'Custom Message':['📢','#2563eb']};
+var st=document.createElement('style');st.textContent='#acpTop{position:fixed;top:0;left:0;right:0;z-index:310;padding:10px;display:grid;gap:8px}.acp-n{display:flex;gap:12px;align-items:flex-start;background:#fff;color:#111827;border-radius:12px;padding:12px 14px;border-left:5px solid var(--c);box-shadow:0 4px 18px #0002;margin-bottom:12px}#acpTop .acp-n{margin:0;max-width:760px;width:100%;justify-self:center}.acp-n i{font-style:normal;font-size:20px}.acp-n div{flex:1}.acp-n small{display:block;color:#6b7280;font-weight:600;margin-bottom:2px}.acp-n button{border:0;background:none;font-size:18px;cursor:pointer;color:#6b7280}#acpLock{position:fixed;inset:0;z-index:400;background:#0b1220;display:grid;place-items:center;padding:20px}#acpLock .box{background:#fff;color:#111827;max-width:460px;width:100%;border-radius:20px;padding:34px;text-align:center}#acpLock h2{margin:10px 0}#acpLock p{color:#4b5563;line-height:1.55}';document.head.appendChild(st);
+var fs=document.createElement('style');document.head.appendChild(fs);
+function e(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function html(N,top){return N.map(function(n){var s=IC[n.type]||IC['Custom Message'],x=n.type==='Normal Notification'||n.type==='Custom Message';return '<div class="acp-n" style="--c:'+s[1]+'"><i>'+s[0]+'</i><div><small>'+e(n.type)+'</small>'+e(n.text)+'</div>'+(x?'<button title="Dismiss" onclick="this.parentNode.remove()">×</button>':'')+'</div>';}).join('');}
+function show(d){
+  if(!d)return;
+  if(d.blocked){lock(d.message);return;}
+  if(locked){location.reload();return;}
+  F=d.feats||{};BN=!!d.blockNew;
+  var hide=[];if(F.reports===false)hide.push('#side a[data-p="reports"]');if(F.backup===false)hide.push('#side a[data-p="backup"]');fs.textContent=hide.length?hide.join(',')+'{display:none!important}':'';
+  var top=document.getElementById('acpTop');if(!inApp){if(!top){top=document.createElement('div');top.id='acpTop';document.body.appendChild(top);}top.innerHTML=html(d.notices);return;}
+  if(top)top.innerHTML='';
+  var m=document.querySelector('main'),b=document.getElementById('acpBox');if(!b&&m){b=document.createElement('div');b.id='acpBox';m.insertBefore(b,m.firstChild);}if(b)b.innerHTML=html(d.notices);
+}
+function lock(msg){
+  locked=true;var l=document.getElementById('acpLock');if(!l){l=document.createElement('div');l.id='acpLock';document.body.appendChild(l);}
+  l.innerHTML='<div class="box"><div style="font-size:46px">⛔</div><h2>Access restricted</h2><p>'+e(msg)+'</p><button class="btn" onclick="location.reload()">Check again</button></div>';
+}
+function pub(){return new Promise(function(ok){google.script.run.withSuccessHandler(function(r){try{ok(JSON.parse(r).data)}catch(x){ok(null)}}).withFailureHandler(function(){ok(null)}).api('acpStatus',{});});}
+function refresh(){(inApp?window.call('acpStatus',{},{quiet:1}):pub()).then(show).catch(function(){});}
+setInterval(function(){var i=document.body.classList.contains('gm-in');if(i!==inApp){inApp=i;refresh();}},1500);
+setInterval(refresh,180000);refresh();
+
+/* any call rejected by the software provider re-checks status (shows lock screen when blocked) */
+var _c=window.call;window.call=async function(a,p,o){try{return await _c(a,p,o);}catch(x){if(x&&/software provider/i.test(x.message||''))refresh();throw x;}};
+
+/* hide / stop individual features in the UI (server enforces the same rules) */
+function guard(o,name,kf,after){var f=o[name];if(typeof f!=='function')return;o[name]=function(){var k=kf.apply(null,arguments);
+  if(k&&F[k]===false){toast(DM,1);return;}if(k==='memberAdd'&&BN){toast(BM,1);return;}
+  var r=f.apply(this,arguments);if(after)after.apply(null,arguments);return r;};}
+var logx=function(w){return function(){window.call('logExport',{what:w+' ('+(document.getElementById('rt')?document.getElementById('rt').value:'')+')'},{quiet:1}).catch(function(){});};};
+[['memberForm',function(id){return id?'memberEdit':'memberAdd';}],['delMember',function(){return 'memberDelete';}],['viewMember',function(){return 'memberView';}],
+ ['planForm',function(id){return id?'planEdit':'planAdd';}],['delPlan',function(){return 'planDelete';}],['payForm',function(){return 'paymentAdd';}],['renewForm',function(){return 'renew';}],
+ ['expForm',function(id){return id?'expenseEdit':'expenseAdd';}],['delExp',function(){return 'expenseDelete';}],['runRep',function(){return 'reports';}],['mark',function(){return 'attMark';}]
+].forEach(function(x){guard(window,x[0],x[1]);});
+guard(window,'csv',function(){return 'export';},logx('CSV export'));guard(window,'printRep',function(){return 'export';},logx('Print report'));
+var gt=setInterval(function(){if(!window.GM)return;clearInterval(gt);
+ guard(GM,'userForm',function(u){return u?'staffEdit':'staffCreate';});guard(GM,'delUser',function(){return 'staffDelete';});guard(GM,'ci',function(k){return k==='in'?'checkIn':'checkOut';});
+ guard(GM,'saveProfile',function(){return 'settingsProfile';});guard(GM,'saveAtt',function(){return 'settingsAttendance';});guard(GM,'saveFin',function(){return 'settingsFinancial';});guard(GM,'savePerms',function(){return 'settingsPerms';});guard(GM,'chgPw',function(){return 'changePw';});
+},200);
+
+/* ---- Backup page (Super Admin only; new feature) ---- */
+NAV.push(['backup','Backup','💾']);
+V.backup=async function(){
+  $('#view').innerHTML='<div class="card"><h3>💾 Backup</h3><p class="mut">Creates a full copy of your gym database in your Google Drive folder “Gym Backups”.</p><button class="btn" id="bkGo">Create backup now</button></div><div class="card"><h3>Previous backups</h3><div id="bkList" class="tw">Loading…</div></div>';
+  async function list(){var L=await window.call('listBackups',{},{quiet:1});document.getElementById('bkList').innerHTML=tbl([['Backup',function(x){return e(x.name);}],['Created',function(x){return x.created;}],['',function(x){return '<a class="btn sm g" target="_blank" href="'+e(x.url)+'">Open</a>';}]],L);}
+  document.getElementById('bkGo').onclick=async function(){var b=this;b.disabled=true;try{var r=await window.call('backupNow',{});toast('Backup created: '+r.name);await list();}finally{b.disabled=false;}};
+  try{await list();}catch(x){document.getElementById('bkList').textContent='Could not load backups.';}
+};
+})();
+</script>
+<script>
+/* ===== SETTINGS: "Subscription" + "Support" tabs (added - nothing existing is changed) ===== */
+(function(){
+var ROLE,asked=0,TKL=[],
+TYPES=['Complaint','Request','Feature Request','Technical Issue','Billing / Payment','Renewal Request','Other'],PRI=['Low','Normal','High','Urgent'],
+SC={Open:'background:#fef3c7;color:#92400e','In Progress':'background:#dbeafe;color:#1e40af',Resolved:'background:#dcfce7;color:#166534',Closed:'background:#e5e7eb;color:#374151',Rejected:'background:#fee2e2;color:#991b1b'},
+LC={Active:SC.Resolved,'Expiring Soon':SC.Open,'Not Set':SC.Closed,Expired:SC.Rejected,Suspended:SC.Rejected,Deactivated:SC.Rejected,Disabled:SC.Rejected,'Login Disabled':SC.Rejected},
+PC={Paid:SC.Resolved,Pending:SC.Open,Unpaid:SC.Rejected};
+function pill(s,c){return '<span class="b" style="'+(c||SC[s]||SC.Closed)+'">'+esc(s)+'</span>';}
+function kv(l,v){return '<div><label>'+l+'</label><div style="font-weight:600">'+v+'</div></div>';}
+function sel(id,list,v){return '<select id="'+id+'">'+list.map(function(x){return '<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select>';}
+function seenGet(){try{return JSON.parse(localStorage.getItem('gm_tk_seen')||'{}');}catch(e){return {};}}
+function seenSet(o){try{localStorage.setItem('gm_tk_seen',JSON.stringify(o));}catch(e){}}
+function unseen(t){var th=t.Thread||[],last=th[th.length-1];return !!last&&last.w!=='admin'&&th.length>(seenGet()[t.TicketID]||0);}
+function lbl(){var b=document.querySelector('[data-xt="tk"]');if(!b)return;var c=TKL.filter(unseen).length;b.textContent='🛟 Support'+(c?' ('+c+' new)':'');}
+
+/* ---- Subscription tab ---- */
+async function vSub(t){
+  t.innerHTML='<div class="card"><p class="mut">Loading…</p></div>';
+  var r;try{r=await window.call('mySub',{},{quiet:1});}catch(e){t.innerHTML='<div class="card"><p class="mut">Could not load subscription details.</p></div>';return;}
+  var s=r.sub,st=r.state,rem=st.remaining,remTxt=rem===null?'No expiry set':rem<0?'Expired '+(-rem)+' day(s) ago':rem+' day(s)';
+  t.innerHTML='<div class="card"><h3>💳 My Subscription</h3><div class="gap" style="align-items:center;margin-bottom:12px">'+pill(st.label,LC[st.label])+'<span>Remaining: <b>'+esc(remTxt)+'</b></span></div>'+
+  (st.message?'<p style="color:var(--bad);font-weight:500">'+esc(st.message)+'</p>':'')+
+  '<div class="grid">'+kv('Plan',esc(s.Plan))+kv('Start date',esc(s.Start||'-'))+kv('Expiry date',esc(s.Expiry||'-'))+kv('Amount',money(s.Amount))+kv('Payment status',pill(s.PayStatus,PC[s.PayStatus]))+kv('Payment reference',esc(s.PayRef||'-'))+kv('Payment date',esc(s.PayDate||'-'))+kv('Account state',esc(s.Status))+'</div>'+
+  ((rem!==null&&rem<=7)?'<div class="gap end"><button class="btn" onclick="XT.newTk(\'Renewal Request\')">Request renewal</button></div>':'<p class="mut" style="margin:14px 0 0">To renew or change your plan, raise a request from the Support tab.</p>')+'</div>'+
+  '<div class="card"><h3>📜 Subscription History</h3><div class="tw">'+tbl([['Recorded',function(x){return esc(x.Time);}],['Action',function(x){return esc(x.Action);}],['Plan',function(x){return esc(x.Plan);}],['Start',function(x){return esc(x.StartDate||'-');}],['Expiry',function(x){return esc(x.ExpiryDate||'-');}],['Amount',function(x){return money(x.Amount);}],['Payment',function(x){return pill(x.PayStatus,PC[x.PayStatus])+(x.PayRef?'<small>'+esc(x.PayRef)+'</small>':'');}],['State',function(x){return esc(x.State);}]],r.history)+'</div></div>';
+}
+
+/* ---- Support tab ---- */
+function listTk(){var b=$('#tk_list');if(!b)return;
+  b.innerHTML=tbl([['ID',function(x){return esc(x.TicketID);}],['Date',function(x){return esc(String(x.CreatedAt).slice(0,16));}],['Type',function(x){return esc(x.Type);}],
+  ['Subject',function(x){return '<b>'+esc(x.Subject)+'</b>'+(unseen(x)?' <span class="b" style="background:#dbeafe;color:#1e40af">New reply</span>':'');}],['Priority',function(x){return esc(x.Priority);}],['Status',function(x){return pill(x.Status);}],
+  ['Last update',function(x){return esc(String(x.UpdatedAt).slice(0,16));}],['',function(x){return '<button class="btn sm g" onclick="XT.view(\''+esc(x.TicketID)+'\')">View</button>';}]],TKL);}
+async function vTk(t,pre){
+  t.innerHTML='<div class="card"><h3>🛟 New Request to Software Provider</h3><p class="mut" style="margin-top:-6px">Complaints, requests, feature ideas or any other issue – your software provider will reply here.</p><div class="grid">'+
+  '<div><label>Type</label>'+sel('tk_type',TYPES,pre||'Request')+'</div><div><label>Priority</label>'+sel('tk_pri',PRI,'Normal')+'</div>'+
+  '<div class="full"><label>Subject *</label><input id="tk_sub" maxlength="100"></div><div class="full"><label>Message * (max 800 characters)</label><textarea id="tk_msg" rows="4" maxlength="800"></textarea></div></div>'+
+  '<div class="gap end"><button class="btn" onclick="XT.submit()">Send Request</button></div></div>'+
+  '<div class="card"><h3>📋 My Requests</h3><div id="tk_list" class="tw"><span class="mut">Loading…</span></div></div>';
+  try{TKL=await window.call('tkList',{},{quiet:1});}catch(e){var b=$('#tk_list');if(b)b.textContent='Could not load requests.';return;}
+  listTk();lbl();}
+async function submit(){
+  var o={type:$('#tk_type').value,priority:$('#tk_pri').value,subject:$('#tk_sub').value.trim(),message:$('#tk_msg').value.trim()};
+  if(!o.subject){toast('Enter a subject',1);return;}if(!o.message){toast('Write your message',1);return;}
+  try{TKL=await window.call('tkNew',o);}catch(e){return;}
+  toast('Request sent to your software provider');$('#tk_sub').value='';$('#tk_msg').value='';listTk();lbl();}
+function view(id){
+  var t=TKL.filter(function(x){return x.TicketID===id;})[0];if(!t)return;
+  var th=t.Thread.map(function(m){
+    if(m.w==='sys')return '<div class="mut" style="text-align:center;font-size:12px;margin:8px 0">'+esc(m.t)+' · '+esc(m.x)+'</div>';
+    var me=m.w==='admin';
+    return '<div style="display:flex;justify-content:'+(me?'flex-end':'flex-start')+';margin:8px 0"><div style="max-width:85%;padding:9px 12px;border-radius:12px;background:'+(me?'#fff1e6':'#eef2ff')+'"><div style="font-size:11px;color:var(--mut);margin-bottom:2px">'+esc(me?'You':m.n)+' · '+esc(m.t)+'</div><div style="white-space:pre-wrap">'+esc(m.x)+'</div></div></div>';}).join('');
+  modal('<h3>'+esc(t.TicketID)+' · '+esc(t.Subject)+'</h3><p class="mut" style="margin:-6px 0 10px">'+esc(t.Type)+' · Priority: '+esc(t.Priority)+' · '+pill(t.Status)+'</p>'+
+  '<div style="max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 10px">'+th+'</div>'+
+  (t.Status==='Closed'?'<p class="mut">This request is closed. Raise a new request if you need more help.</p><div class="gap end"><button class="btn g" onclick="closeM()">Close window</button></div>':
+  '<div style="margin-top:12px"><label>Reply / follow-up</label><textarea id="tk_re" rows="3" maxlength="800"></textarea></div><div class="gap end"><button class="btn g" onclick="closeM()">Close window</button><button class="btn r" onclick="XT.closeTk(\''+esc(id)+'\')">Mark as closed</button><button class="btn" onclick="XT.reply(\''+esc(id)+'\')">Send reply</button></div>'),true);
+  var s=seenGet();s[id]=t.Thread.length;seenSet(s);listTk();lbl();}
+async function reply(id){
+  var x=$('#tk_re').value.trim();if(!x){toast('Write your reply',1);return;}
+  try{TKL=await window.call('tkReply',{id:id,text:x});}catch(e){return;}
+  toast('Reply sent');view(id);}
+async function closeTk(id){
+  try{TKL=await window.call('tkClose',{id:id});}catch(e){return;}
+  toast('Request closed');view(id);}
+
+/* ---- tab plumbing: adds two buttons to the existing Settings tab bar, Super Admin only ---- */
+function open(w,pre){
+  var bar=document.querySelector('#view .gm-tabs'),tab=$('#gmTab');if(!bar||!tab)return;
+  bar.querySelectorAll('button').forEach(function(b){b.classList.remove('on');});
+  var b=bar.querySelector('[data-xt="'+w+'"]');if(b)b.classList.add('on');
+  if(w==='sub')vSub(tab);else vTk(tab,pre);}
+function inject(){
+  var v=$('#view');if(!v)return;var bar=v.querySelector('.gm-tabs');if(!bar||bar.querySelector('[data-xt]'))return;
+  if(ROLE===undefined){if(!asked){asked=1;window.call('authInfo',{},{quiet:1}).then(function(r){ROLE=(r&&r.user&&r.user.Role)||'';inject();}).catch(function(){asked=0;});}return;}
+  if(ROLE!=='Super Admin')return;
+  bar.insertAdjacentHTML('beforeend','<button data-xt="sub" onclick="XT.open(\'sub\')">💳 Subscription</button><button data-xt="tk" onclick="XT.open(\'tk\')">🛟 Support</button>');
+  window.call('tkList',{},{quiet:1}).then(function(l){TKL=l;lbl();}).catch(function(){});}
+window.XT={open:open,newTk:function(ty){open('tk',ty);},submit:submit,view:view,reply:reply,closeTk:closeTk};
+var mo=new MutationObserver(function(){inject();});
+(function arm(){var v=$('#view');if(v)mo.observe(v,{childList:true});else setTimeout(arm,500);})();
+})();
+</script>
+</body>
+</html>
