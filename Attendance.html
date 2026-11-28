@@ -23,7 +23,7 @@ body:not([data-s="s1"]) .hero{padding:16px 24px 14px}
 body:not([data-s="s1"]) .logo{width:52px;height:52px;border-radius:16px;font-size:24px;margin-bottom:8px}
 body:not([data-s="s1"]) .hero h1{font-size:18px}
 body:not([data-s="s1"]) .hero p{display:none}
-.sheet{flex:1;background:#fff;border-radius:28px 28px 0 0;padding:22px 20px calc(28px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.sheet{flex:1;display:flex;flex-direction:column;background:#fff;border-radius:28px 28px 0 0;padding:22px 20px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.25)}
 .steps{display:flex;gap:6px;justify-content:center;margin:0 0 20px}
 .steps i{height:5px;width:34px;border-radius:5px;background:var(--line);transition:.3s}
 .steps i.on{background:var(--acc)}
@@ -41,6 +41,7 @@ input:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px rgba(24
 .btn[disabled]{opacity:.65;pointer-events:none}
 .btn.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:none}
 .btn.ok{background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 8px 20px rgba(22,163,74,.35)}
+.btn.dark{background:linear-gradient(135deg,#1f2937,#0b1220);box-shadow:0 8px 20px rgba(17,24,39,.35)}
 .link{background:none;border:0;color:var(--mut);font:600 14px Inter,sans-serif;padding:14px;width:100%;cursor:pointer}
 .spin{width:18px;height:18px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -64,10 +65,13 @@ input:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px rgba(24
 .cell.due b{color:var(--bad)}.cell.clear b{color:var(--ok)}
 .camwrap{position:relative;width:100%;max-width:340px;aspect-ratio:1/1;margin:16px auto 0;border-radius:28px;overflow:hidden;background:#0b1220;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .camwrap video,.camwrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.ring{position:absolute;inset:14% 18%;border:3px dashed rgba(255,255,255,.7);border-radius:50%;pointer-events:none}
-.camtxt{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-size:12px;font-weight:600;text-shadow:0 1px 4px #000}
-.shutter{width:76px;height:76px;border-radius:50%;border:5px solid var(--acc);background:#fff;margin:16px auto 0;display:block;box-shadow:0 6px 18px rgba(249,115,22,.4);cursor:pointer}
+.ring{position:absolute;inset:14% 18%;border:3px dashed rgba(255,255,255,.7);border-radius:50%;pointer-events:none;transition:border-color .2s}
+.ring.ok{border:4px solid #22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.25)}
+.ring.bad{border-color:#f87171}
+.camtxt{position:absolute;left:10px;right:10px;bottom:12px;text-align:center;color:#fff;font-size:13px;font-weight:700;text-shadow:0 1px 4px #000}
+.shutter{width:76px;height:76px;border-radius:50%;border:5px solid var(--acc);background:#fff;margin:16px auto 0;display:block;box-shadow:0 6px 18px rgba(249,115,22,.4);cursor:pointer;transition:.2s}
 .shutter:active{transform:scale(.92)}
+.shutter[disabled]{opacity:.35;filter:grayscale(1);pointer-events:none;box-shadow:none}
 .center{text-align:center}
 .big{width:104px;height:104px;border-radius:50%;margin:6px auto 18px;display:flex;align-items:center;justify-content:center}
 .big.g{background:#dcfce7}.big.a{background:#fef3c7}
@@ -80,6 +84,14 @@ input:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px rgba(24
 .sub{color:var(--mut);font-size:14px;font-weight:500;margin:0}
 .tm{display:inline-block;margin-top:16px;background:#f3f4f6;border-radius:99px;padding:9px 18px;font-weight:700;font-size:15px}
 .sel{width:92px;height:92px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.2);margin:0 auto 10px;display:block;transform:scaleX(-1)}
+.ntcs{margin-top:16px}
+.ntc{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:12px 14px;border-radius:14px;font-size:14px;font-weight:600;line-height:1.45;margin-top:10px}
+.ntc i{font-style:normal;font-size:18px;line-height:1.2}
+.ntc.warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.ntc.bad{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+.foot{margin-top:auto;padding-top:26px;text-align:center;font-size:12px;color:#9ca3af;font-weight:500;letter-spacing:.2px}
+.foot a{color:var(--acc);font-weight:800;text-decoration:none;letter-spacing:.4px}
+.foot a:hover,.foot a:active{text-decoration:underline}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -120,9 +132,9 @@ input:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px rgba(24
       <div id="camBox">
         <div id="live">
           <h2 style="margin-top:18px">Take Your Selfie</h2>
-          <p class="lead" style="margin-bottom:0">Look at the camera and keep your face inside the circle</p>
-          <div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="ring"></div><div class="camtxt" id="camtxt">Opening camera…</div></div>
-          <button class="shutter" id="snap" aria-label="Capture photo" hidden></button>
+          <p class="lead" style="margin-bottom:0">Look straight at the camera – it captures automatically when your face is detected</p>
+          <div class="camwrap"><video id="vid" playsinline muted autoplay></video><div class="ring" id="ring"></div><div class="camtxt" id="camtxt">Opening camera…</div></div>
+          <button class="shutter" id="snap" aria-label="Capture photo" disabled hidden></button>
           <div class="msg bad" id="ce"></div>
           <button class="btn ghost" id="retryCam" hidden>TRY CAMERA AGAIN</button>
         </div>
@@ -138,36 +150,47 @@ input:focus{border-color:var(--acc);background:#fff;box-shadow:0 0 0 4px rgba(24
       <button class="link" id="back1">Not you? Use a different Member ID</button>
     </section>
 
-    <!-- SCREEN 3 : SUCCESS -->
+    <!-- SCREEN 3 : SUCCESS (check-in / check-out) -->
     <section class="scr center" id="s3">
       <img class="sel" id="selOk" alt="">
       <div class="big g pop"><svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-      <p class="okh">Attendance Marked!</p>
+      <p class="okh" id="okH">Attendance Marked!</p>
       <p class="nm" id="okNm"></p>
       <p class="sub" id="okDt"></p>
       <div class="tm" id="okTm"></div>
-      <p class="sub" style="margin-top:18px">Have a great workout 💪</p>
+      <div class="ntcs" id="ntc3"></div>
+      <p class="sub" id="okBye" style="margin-top:18px">Have a great workout 💪</p>
       <button class="btn" id="done">DONE</button>
     </section>
 
-    <!-- SCREEN 4 : ALREADY PRESENT -->
+    <!-- SCREEN 4 : ALREADY PRESENT (+ check-out option) -->
     <section class="scr center" id="s4">
       <div class="big a pop"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.5l3.5 2"/></svg></div>
       <p class="alr">YOU ARE ALREADY PRESENT FOR TODAY!</p>
       <p class="nm" id="alNm"></p>
       <p class="sub" id="alSub"></p>
       <div class="tm" id="alTm" hidden></div>
-      <button class="btn" id="done2">OK</button>
+      <div class="ntcs" id="ntc4"></div>
+      <div class="msg bad" id="e4"></div>
+      <button class="btn dark" id="outBtn" hidden>CHECK OUT NOW</button>
+      <button class="btn ghost" id="done2">OK</button>
     </section>
+
+    <footer class="foot">Powered by <a href="https://wa.me/917449603147" target="_blank" rel="noopener noreferrer">WANZA MARKETING</a></footer>
   </main>
 </div>
 
 <script>
 /* ===== set this to the SAME web-app URL used in Admin.html (window.GAS_URL) ===== */
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbw9h7vyzRqL5lYnV3pPYeajvwiUod7s7Xd-PMDY6ZWJZGbgFMi5odBVYKobA7GqqVc1zg/exec';
+/* ===== face check: true = a face MUST be detected (recommended). false = if the face library cannot load, allow selfie without face check ===== */
+var FACE_STRICT = true;
+var FACE_LIB = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js';
+var FACE_MODELS = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
 
 var $ = function (i) { return document.getElementById(i); };
-var M = null, photo = '', stream = null, resetT = null, MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var M = null, photo = '', stream = null, resetT = null, tok = 0, okFrames = 0, faceReady = false, faceLoad = null, faceSkipped = false;
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function dev() { try { var d = localStorage.getItem('gs_dev'); if (!d) { d = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('gs_dev', d); } return d; } catch (e) { return 'nodev'; } }
 function call(a, p) {
@@ -189,24 +212,56 @@ function fDate(s) { var a = String(s || '').split('-'); return a.length === 3 ? 
 function fTime(s) { var a = String(s || '').split(':'); if (a.length < 2) return ''; var h = +a[0]; return ((h % 12) || 12) + ':' + a[1] + ' ' + (h >= 12 ? 'PM' : 'AM'); }
 function fMoney(v) { return '₹' + Number(v || 0).toLocaleString('en-IN'); }
 
-/* ---------- gym name + logo (no member data) ---------- */
-call('selfInfo').then(function (d) {
+/* ---------- gym name + logo (instant from cache, then refreshed) ---------- */
+function applyInfo(d) {
   if (d.gym) { $('gymH').innerHTML = 'Welcome to <b></b>'; $('gymH').querySelector('b').textContent = d.gym; document.title = d.gym + ' – Attendance'; }
   if (d.logo && /^data:image\//.test(d.logo)) { var i = new Image(); i.alt = 'Gym logo'; i.src = d.logo; $('logo').innerHTML = ''; $('logo').appendChild(i); }
-}).catch(function () {});
+}
+try { var ci = JSON.parse(localStorage.getItem('gs_info') || 'null'); if (ci) applyInfo(ci); } catch (e) {}
+call('selfInfo').then(function (d) { applyInfo(d); try { localStorage.setItem('gs_info', JSON.stringify(d)); } catch (e) {} }).catch(function () {});
+
+/* ---------- face detection library (loaded in the background while the member types the ID) ---------- */
+function loadFace() {
+  if (faceReady) return Promise.resolve();
+  if (faceLoad) return faceLoad;
+  faceLoad = new Promise(function (ok, no) {
+    var s = document.createElement('script'); s.src = FACE_LIB; s.onload = ok; s.onerror = function () { no(new Error('lib')); }; document.head.appendChild(s);
+  }).then(function () { return window.faceapi.tf.ready(); })
+    .then(function () { return window.faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODELS); })
+    .then(function () { faceReady = true; })
+    .catch(function (e) { faceLoad = null; throw e; });
+  return faceLoad;
+}
+$('mid').addEventListener('focus', function () { loadFace().catch(function () {}); });
 
 /* ---------- step 1: verify ---------- */
 function verify() {
   var v = $('mid').value.trim(); msg('e1', '');
   if (!v) { msg('e1', 'Please enter your Member ID'); $('mid').focus(); return; }
-  busy('vb', true, 'VERIFYING…');
+  busy('vb', true, 'VERIFYING…'); loadFace().catch(function () {});
   call('selfVerify', { memberId: v }).then(function (d) { busy('vb', false); M = d; render(d); })
     .catch(function (e) { busy('vb', false); msg('e1', e.message); });
 }
+function ntxt(n) {
+  if (n.k === 'due') return 'Your pending membership payment is ' + fMoney(n.amount) + '. Please clear your dues.';
+  if (n.k === 'expired') return 'Your membership has expired. Please contact the gym administrator.';
+  return n.days === 0 ? 'Your membership expires today. Please renew soon.' : 'Your membership will expire in ' + n.days + ' day' + (n.days === 1 ? '' : 's') + '. Please renew soon.';
+}
+function notices(boxId, list) {
+  var b = $(boxId); b.innerHTML = '';
+  (list || []).forEach(function (n) {
+    var d = document.createElement('div'); d.className = 'ntc ' + (n.k === 'expired' ? 'bad' : 'warn');
+    var i = document.createElement('i'); i.textContent = n.k === 'due' ? '💳' : n.k === 'expired' ? '⚠️' : '⏳';
+    var t = document.createElement('span'); t.textContent = ntxt(n); d.appendChild(i); d.appendChild(t); b.appendChild(d);
+  });
+}
 function render(d) {
   if (d.already) {
-    $('alNm').textContent = d.name; $('alSub').textContent = 'Your attendance is already recorded for today.';
-    $('alTm').hidden = !d.checkIn; if (d.checkIn) $('alTm').textContent = 'Checked in at ' + fTime(d.checkIn);
+    $('alNm').textContent = d.name;
+    $('alSub').textContent = d.checkOut ? 'You have already checked in and checked out today.' : 'Your attendance is already recorded for today.';
+    var tx = d.checkOut ? 'Checked in ' + fTime(d.checkIn) + '  ·  Checked out ' + fTime(d.checkOut) : d.checkIn ? 'Checked in at ' + fTime(d.checkIn) : '';
+    $('alTm').hidden = !tx; $('alTm').textContent = tx;
+    $('outBtn').hidden = !d.canOut; msg('e4', ''); notices('ntc4', d.notices);
     show('s4'); return;
   }
   $('av').textContent = (d.name || 'M').trim().charAt(0).toUpperCase(); $('nm').textContent = d.name; $('idl').textContent = d.id;
@@ -219,44 +274,101 @@ function render(d) {
   if (d.canMark) { setLive(); startCam(); }
 }
 
-/* ---------- step 2: live front camera ---------- */
-function setLive() { photo = ''; $('live').hidden = false; $('rev').hidden = true; msg('e2', ''); }
-function camErr(t) { $('camtxt').textContent = ''; $('snap').hidden = true; msg('ce', t); $('retryCam').hidden = false; }
+/* ---------- step 2: live front camera + face detection ---------- */
+function setLive() { photo = ''; okFrames = 0; $('live').hidden = false; $('rev').hidden = true; msg('e2', ''); }
+function camErr(t) { tok++; $('camtxt').textContent = ''; $('snap').hidden = true; msg('ce', t); $('retryCam').hidden = false; }
 function startCam() {
-  stopCam(); msg('ce', ''); $('retryCam').hidden = true; $('snap').hidden = true; $('camtxt').textContent = 'Opening camera…';
+  stopCam(); msg('ce', ''); $('retryCam').hidden = true; $('snap').hidden = true; $('snap').disabled = true; okFrames = 0; faceSkipped = false;
+  $('ring').className = 'ring'; $('camtxt').textContent = 'Opening camera…';
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { camErr('Camera is not available. Please open this page in Chrome (Android) or Safari (iPhone) using the https link.'); return; }
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } }, audio: false }).then(function (s) {
     stream = s; var v = $('vid'); v.srcObject = s; var p = v.play(); if (p && p.catch) p.catch(function () {});
-    v.onloadedmetadata = function () { $('snap').hidden = false; $('camtxt').textContent = 'Tap the button to capture'; };
+    var t = ++tok; $('snap').hidden = false;
+    $('camtxt').textContent = faceReady ? 'Looking for your face…' : 'Loading face check…';
+    loadFace().then(function () { if (t === tok) startScan(t); }).catch(function () {
+      if (t !== tok) return;
+      if (FACE_STRICT) { camErr('Face check could not load. Please check your internet connection and tap "Try camera again".'); }
+      else { faceSkipped = true; $('snap').disabled = false; $('camtxt').textContent = 'Tap the button to capture'; }
+    });
   }).catch(function (e) {
     var n = e && e.name;
     camErr(n === 'NotAllowedError' || n === 'SecurityError' ? 'Camera permission is blocked. Please allow camera access for this page in your browser settings, then tap "Try camera again".' : n === 'NotFoundError' ? 'No camera found on this device.' : 'Could not start the camera. Close other apps that use the camera and try again.');
   });
 }
-function stopCam() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } $('vid').srcObject = null; }
+function stopCam() { tok++; if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } $('vid').srcObject = null; }
+function faceOpts() { return new window.faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }); }
+/* is there exactly ONE face, big enough, and centred in the square that will be saved? */
+function judge(r, v) {
+  if (!r.length) return { ok: false, t: 'No face detected – look at the camera' };
+  if (r.length > 1) return { ok: false, t: 'Only one person please' };
+  var b = r[0].box, W = v.videoWidth, H = v.videoHeight, S = Math.min(W, H), sx = (W - S) / 2, sy = (H - S) / 2;
+  var cx = (b.x + b.width / 2 - sx) / S, cy = (b.y + b.height / 2 - sy) / S, sz = b.width / S;
+  if (sz < 0.26) return { ok: false, t: 'Move a little closer' };
+  if (sz > 0.85) return { ok: false, t: 'Move a little back' };
+  if (Math.abs(cx - 0.5) > 0.22 || Math.abs(cy - 0.5) > 0.24) return { ok: false, t: 'Keep your face inside the circle' };
+  return { ok: true, t: 'Face detected ✓ Hold still…' };
+}
+function startScan(t) {
+  var v = $('vid');
+  (function loop() {
+    if (t !== tok) return;
+    if (v.readyState < 2 || !v.videoWidth) { setTimeout(loop, 200); return; }
+    window.faceapi.detectAllFaces(v, faceOpts()).then(function (r) {
+      if (t !== tok) return;
+      var j = judge(r, v); okFrames = j.ok ? okFrames + 1 : 0;
+      $('ring').className = 'ring ' + (j.ok ? 'ok' : 'bad'); $('camtxt').textContent = j.t; $('snap').disabled = okFrames < 2;
+      if (okFrames >= 6) { snap(); return; }          /* steady face -> capture automatically */
+      setTimeout(loop, 100);
+    }).catch(function () { setTimeout(loop, 400); });
+  })();
+}
 function snap() {
-  var v = $('vid'); if (!v.videoWidth) return;
-  var s = Math.min(v.videoWidth, v.videoHeight), sx = (v.videoWidth - s) / 2, sy = (v.videoHeight - s) / 2, size = 320, q = .6, d, c = document.createElement('canvas');
+  var v = $('vid'); if (!v.videoWidth || !stream) return;
+  var t = ++tok, s = Math.min(v.videoWidth, v.videoHeight), sx = (v.videoWidth - s) / 2, sy = (v.videoHeight - s) / 2, size = 320, q = .6, d, c = document.createElement('canvas');
   do { c.width = c.height = size; c.getContext('2d').drawImage(v, sx, sy, s, s, 0, 0, size, size); d = c.toDataURL('image/jpeg', q); size -= 40; q = Math.max(.4, q - .05); } while (d.length > 40000 && size >= 160);
-  photo = d; $('shot').src = d; stopCam(); $('live').hidden = true; $('rev').hidden = false; msg('e2', '');
+  var accept = function () { photo = d; $('shot').src = d; stopCam(); $('live').hidden = true; $('rev').hidden = false; msg('e2', ''); };
+  if (faceSkipped || !faceReady) { accept(); return; }
+  /* final check on the exact picture that will be saved */
+  window.faceapi.detectAllFaces(c, faceOpts()).then(function (r) {
+    if (r.length === 1) { accept(); return; }
+    okFrames = 0; $('camtxt').textContent = 'Face not clear – please look straight at the camera'; var t2 = ++tok; startScan(t2);
+  }).catch(function () { okFrames = 0; var t2 = ++tok; startScan(t2); });
 }
 
-/* ---------- step 3: mark attendance ---------- */
+/* ---------- step 3: mark attendance / check-out ---------- */
+function showDone(kind, d, list) {
+  var out = kind === 'out';
+  $('selOk').hidden = out; if (!out) $('selOk').src = photo;
+  $('okH').textContent = out ? 'Checked Out!' : 'Attendance Marked!'; $('okNm').textContent = d.name; $('okDt').textContent = fDate(d.date);
+  $('okTm').textContent = out ? 'Checked out at ' + fTime(d.time) : 'Checked in at ' + fTime(d.time);
+  $('okBye').textContent = out ? 'Thank you! See you again 👋' : 'Have a great workout 💪';
+  notices('ntc3', out ? [] : list); show('s3');
+  resetT = setTimeout(reset, (list && list.length && !out) ? 20000 : 10000);
+}
 function mark() {
   if (!photo) { msg('e2', 'Please capture your live photo first'); return; }
   msg('e2', ''); busy('mk', true, 'MARKING…');
   call('selfMark', { memberId: M.id, selfie: photo }).then(function (d) {
     busy('mk', false);
-    if (d.already) { M.checkIn = d.time; M.name = d.name; render(Object.assign({}, M, { already: true })); return; }
-    $('selOk').src = photo; $('okNm').textContent = d.name; $('okDt').textContent = fDate(d.date); $('okTm').textContent = 'Checked in at ' + fTime(d.time);
-    show('s3'); resetT = setTimeout(reset, 12000);
+    if (d.already) { M.checkIn = d.time; M.name = d.name; M.notices = d.notices; render(Object.assign({}, M, { already: true, canOut: false })); return; }
+    call('selfPhoto', { memberId: M.id }).catch(function () {});     /* saves the selfie to the Vault in the background */
+    showDone('in', d, d.notices);
   }).catch(function (e) { busy('mk', false); msg('e2', e.message); });
+}
+function checkOut() {
+  msg('e4', ''); busy('outBtn', true, 'CHECKING OUT…');
+  call('selfOut', { memberId: M.id }).then(function (d) {
+    busy('outBtn', false);
+    if (d.already) { render(Object.assign({}, M, { already: true, checkIn: d.checkIn, checkOut: d.time, canOut: false })); return; }
+    showDone('out', d, []);
+  }).catch(function (e) { busy('outBtn', false); msg('e4', e.message); });
 }
 function reset() { clearTimeout(resetT); stopCam(); M = null; photo = ''; $('mid').value = ''; msg('e1', ''); msg('blk', ''); setLive(); show('s1'); }
 
 $('vb').onclick = verify;
 $('mid').addEventListener('keydown', function (e) { if (e.key === 'Enter') verify(); });
-$('snap').onclick = snap; $('mk').onclick = mark; $('rt').onclick = function () { setLive(); startCam(); };
+$('snap').onclick = snap; $('mk').onclick = mark; $('outBtn').onclick = checkOut;
+$('rt').onclick = function () { setLive(); startCam(); };
 $('retryCam').onclick = startCam; $('back1').onclick = reset; $('done').onclick = reset; $('done2').onclick = reset;
 document.addEventListener('visibilitychange', function () { if (document.hidden) stopCam(); else if (document.body.getAttribute('data-s') === 's2' && M && M.canMark && !$('live').hidden && !stream) startCam(); });
 window.addEventListener('pagehide', stopCam);
