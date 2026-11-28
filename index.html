@@ -116,7 +116,7 @@ body:not(.gm-in) #app{visibility:hidden}
 <div id="modalRoot"></div><div id="toast"></div><div id="loader"><i></i></div><div id="print"></div>
 
 <script>
-window.onerror=function(m,s,l,c){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#dc2626;color:#fff;padding:10px 14px;font:13px monospace';d.textContent='JS ERROR: '+m+' (line '+l+', col '+c+')';document.body.appendChild(d);};
+window.onerror=function(m,s,l,c){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#dc2626;color:#fff;padding:10px 14px;font:13px monospace';d.className='jserr';d.style.top=(document.querySelectorAll('.jserr').length*36)+'px';d.textContent='JS ERROR: '+m+' (line '+l+', col '+c+')';document.body.appendChild(d);};
 </script>
 <script>
 /* ===== CONFIG ===== */
@@ -196,17 +196,17 @@ function mList(){const q=$('#q').value.toLowerCase(),sf=$('#sf').value;
   $('#mt').innerHTML=tbl([['ID',m=>m.MemberID],['Name',m=>`<b>${esc(m.Name)}</b><small>${esc(m.Mobile)}</small>`],['Plan',m=>esc(m.Plan)],['Expiry',m=>m.ExpiryDate],['Status',m=>bd(m.MStatus)],['Pending',m=>n(m.Pending)>0?`<b style="color:var(--bad)">${money(m.Pending)}</b>`:money(0)],['',m=>`<span class="gap"><button class="btn sm g" onclick="viewMember('${m.MemberID}')">View</button><button class="btn sm g" onclick="memberForm('${m.MemberID}')">Edit</button><button class="btn sm k" onclick="payForm('${m.MemberID}')">Pay</button><button class="btn sm w" onclick="waMenu('${m.MemberID}')">WA</button><button class="btn sm r" onclick="delMember('${m.MemberID}')">Delete</button></span>`]],L);}
 function mFields(isNew,m){const pn=DB.plans.filter(p=>p.Status!=='Inactive').map(p=>p.Name);if(m.Plan&&!pn.includes(m.Plan))pn.push(m.Plan);
   const F=[{k:'Name',l:'Full Name',r:1},{k:'Mobile',l:'Mobile Number',t:'tel',r:1},{k:'WhatsApp',l:'WhatsApp Number',t:'tel'},{k:'Email',l:'Email Address',t:'email'},{k:'Gender',l:'Gender',t:'select',o:['Male','Female','Other']},{k:'DOB',l:'Date of Birth',t:'date'},{k:'JoinDate',l:'Joining Date',t:'date'},{k:'Status',l:'Status',t:'select',o:['Active','Inactive']},{k:'Plan',l:'Membership Plan',t:'select',o:pn,h:1},{k:'StartDate',l:'Membership Start Date',t:'date',h:1,r:1},{k:'ExpiryDate',l:'Membership Expiry Date',t:'date',r:1},{k:'TotalFees',l:'Total Membership Fees',t:'number',h:1},{k:'Discount',l:'Discount',t:'number',h:1},{k:'Final',l:'Final Payable',ro:1}];
-  if(isNew)F.push({k:'Paid',l:'Amount Paid Now',t:'number',h:1},{k:'Mode',l:'Payment Mode',t:'select',o:MODES},{k:'Reference',l:'Transaction Reference'});
+  F.push({k:'Paid',l:'Amount Paid Now',t:'number',h:1},{k:'Mode',l:'Payment Mode',t:'select',o:MODES},{k:'Reference',l:'Transaction Reference'});
   F.push({k:'Pend',l:'Pending Amount',ro:1},{k:'Emergency',l:'Emergency Contact',t:'tel'},{k:'Address',l:'Full Address',t:'textarea',full:1},{k:'Medical',l:'Medical Notes (optional)',t:'textarea',full:1});return F;}
 function memberForm(id){
   const act=DB.plans.filter(p=>p.Status!=='Inactive'),m=id?{...mem(id)}:{JoinDate:DB.today,StartDate:DB.today,Gender:'Male',Status:'Active',Discount:0,Paid:0,Mode:'Cash',Plan:(act[0]||{}).Name};
-  MC={carry:n(m.CarryFwd),paid:n(m.Paid)};PH='';MF=mFields(!id,m);
+  MC={carry:n(m.CarryFwd),paid:n(m.Paid)};PH='';if(id){m.Paid=0;m.Mode='Cash';m.Reference='';}MF=mFields(!id,m);
   modal(`<h3>${id?'Edit Member '+id:'Add New Member'}</h3><div class="grid">${MF.map(f=>fld(f,m)).join('')}<div class="full"><label>Photo (optional)${id?' – leave empty to keep current':''}</label><input type="file" accept="image/*" onchange="pickPhoto(this)"><img id="pv" style="display:none;width:80px;height:80px;object-fit:cover;border-radius:50%;margin-top:8px"></div></div><div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="saveMember('${id||''}')">Save Member</button></div>`,true);
   memCalc(id?'':'Plan');
 }
 function memCalc(src){const g=k=>$('#f_'+k);
   if(src==='Plan'||src==='StartDate'){const p=DB.plans.find(x=>x.Name===g('Plan').value);if(p){if(src==='Plan')g('TotalFees').value=p.Price;if(g('StartDate').value)g('ExpiryDate').value=addDur(g('StartDate').value,n(p.Duration),p.Unit);}}
-  const fin=n(g('TotalFees').value)-n(g('Discount').value)+n(MC.carry),paid=g('Paid')?n(g('Paid').value):n(MC.paid);g('Final').value=fin;g('Pend').value=fin-paid;}
+  const fin=n(g('TotalFees').value)-n(g('Discount').value)+n(MC.carry),paid=n(MC.paid)+(g('Paid')?n(g('Paid').value):0);g('Final').value=fin;g('Pend').value=fin-paid;}
 function pickPhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const s=Math.min(1,200/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);PH=c.toDataURL('image/jpeg',.6);$('#pv').src=PH;$('#pv').style.display='block';};im.src=e.target.result;};r.readAsDataURL(f);}
 async function saveMember(id){const o=val(MF);if(!o)return;if(id)o.MemberID=id;if(PH)o.Photo=PH;await call('saveMember',{m:o});closeM();V[page]();toast('Member saved');}
 function delMember(id){ask(`Delete <b>${esc(mem(id).Name)}</b> (${id})? Payment records are kept for accounting.`,async()=>{await call('deleteMember',{id});V[page]();toast('Member deleted');});}
@@ -220,6 +220,7 @@ async function viewMember(id){
   <h3 style="margin-top:18px">Membership History</h3><div class="tw">${tbl([['Plan',h=>esc(h.Plan)],['Start',h=>h.StartDate],['Expiry',h=>h.ExpiryDate],['Payable',h=>money(h.Payable)],['Paid',h=>money(h.Paid)],['Pending',h=>money(h.Pending)]],hist.concat([{Plan:m.Plan+' (current)',StartDate:m.StartDate,ExpiryDate:m.ExpiryDate,Payable:m.Payable,Paid:m.Paid,Pending:m.Pending}]))}</div>
   <h3 style="margin-top:18px">Attendance – ${pc}% present (${pr}/${att.length} days marked)</h3><div class="tw" style="max-height:220px;overflow:auto">${tbl([['Date',a=>a.Date],['Status',a=>bd(a.Status)]],att.slice(0,60))}</div><div class="gap end"><button class="btn g" onclick="closeM()">Close</button></div>`,true);
 }
+
 function printMember(id){const m=mem(id),a=PROF.id===id?PROF.att:[],rows=[['Member ID',id],['Name',m.Name],['Mobile',m.Mobile],['WhatsApp',m.WhatsApp],['Email',m.Email],['Gender',m.Gender],['DOB',m.DOB],['Address',m.Address],['Joined',m.JoinDate],['Plan',m.Plan],['Start',m.StartDate],['Expiry',m.ExpiryDate],['Status',m.MStatus],['Total Fees',money(m.TotalFees)],['Discount',money(m.Discount)],['Payable',money(m.Payable)],['Paid',money(m.Paid)],['Pending',money(m.Pending)],['Emergency',m.Emergency],['Medical Notes',m.Medical],['Attendance',a.length?Math.round(a.filter(x=>x.Status==='Present').length/a.length*100)+'% present':'-']];
   doPrint(`<div style="font-family:Arial;max-width:700px;margin:auto"><h2 style="text-align:center">${GYM} – Member Details</h2>${PROF.ph&&PROF.id===id?`<img src="${PROF.ph}" style="width:90px;height:90px;object-fit:cover;float:right">`:''}<table style="width:100%;border-collapse:collapse">${rows.map(r=>`<tr><td style="padding:5px;border-bottom:1px solid #ddd;color:#555;width:35%">${r[0]}</td><td style="padding:5px;border-bottom:1px solid #ddd"><b>${esc(r[1]||'-')}</b></td></tr>`).join('')}</table><h3>Payments</h3><table style="width:100%;border-collapse:collapse;font-size:13px">${DB.payments.filter(p=>p.MemberID===id).map(p=>`<tr><td>${p.PaymentID}</td><td>${p.Date}</td><td>${money(p.Received)}</td><td>${p.Mode}</td><td>${money(p.Balance)}</td></tr>`).join('')}</table></div>`);}
 
@@ -296,7 +297,7 @@ function startApp(first){call('bootstrap').then(()=>go(first||'dashboard')).catc
 (function(){
 var TOK='',ME=null,SET=null,MEMT='',USERS=[],TAB='profile',LOGO;
 var SK='gm_tok',RANK={none:0,view:1,edit:2};
-var ML={dashboard:'Dashboard',members:'Members',plans:'Membership Plans',payments:'Payments',attendance:'Attendance',renewals:'Renewals',expenses:'Expenses',reports:'Reports',settings:'Settings'};
+var ML={dashboard:'Dashboard',members:'Members',plans:'Membership Plans',payments:'Payments',attendance:'Attendance',renewals:'Renewals',expenses:'Expenses',reports:'Reports',leads:'Leads',settings:'Settings'};
 function gid(i){return document.getElementById(i);}
 var store={
   get:function(){var v='';try{v=localStorage.getItem(SK)||sessionStorage.getItem(SK)||'';}catch(e){}return v||MEMT;},
@@ -306,6 +307,7 @@ var store={
 function raw(a,p){return new Promise(function(ok,no){google.script.run.withSuccessHandler(function(r){try{var j=JSON.parse(r);j.ok?ok(j.data):no(new Error(j.error));}catch(e){no(e);}}).withFailureHandler(function(e){no(new Error((e&&e.message)||String(e)));}).api(a,Object.assign({},p||{},{_t:TOK}));});}
 function can(mod,lvl){if(!ME)return false;if(ME.Role==='Super Admin')return true;var r=((SET&&SET.perms||{})[ME.Role]||{})[mod]||'none';return RANK[r]>=RANK[lvl||'view'];}
 function isSA(){return !!ME&&ME.Role==='Super Admin';}
+window.gmCan=can;
 
 /* ---- wrap existing functions (existing code is NOT edited) ---- */
 var _call=window.call,_go=window.go;
@@ -609,6 +611,191 @@ var deferredPrompt=null,ib=document.getElementById('installBtn');
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;ib.style.display='block';});
 ib.addEventListener('click',async function(){if(!deferredPrompt)return;ib.style.display='none';deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;});
 window.addEventListener('appinstalled',function(){ib.style.display='none';});
+</script>
+<script>
+/* ===== MEMBER DOCUMENTS (added - nothing existing is changed; files go to the Vault Drive) ===== */
+(function(){
+var TYPES=['Aadhar Card','PAN Card','Driving Licence','Passport','Voter ID','Address Proof','Medical Certificate','Other'];
+function canEdit(){try{return typeof can==='function'?can('members','edit'):true;}catch(e){return true;}}
+function row(id,d,ed){
+  return '<tr><td>'+esc(d.Type)+'</td><td>'+esc(d.FileName)+'</td><td>'+Math.max(1,Math.round(n(d.Size)/1024))+' KB</td><td>'+esc(d.UploadedAt)+'</td><td><button class="btn sm k" onclick="XD.view(\''+id+'\',\''+d.DocID+'\')">View</button>'+(ed?' <button class="btn sm" style="background:var(--bad)" onclick="XD.del(\''+id+'\',\''+d.DocID+'\')">Delete</button>':'')+'</td></tr>';
+}
+function box(id,docs){
+  var ed=canEdit(),h='<div id="docBox"><div class="tw"><table><thead><tr><th>Type</th><th>File</th><th>Size</th><th>Uploaded</th><th></th></tr></thead><tbody>';
+  h+=(docs&&docs.length)?docs.map(function(d){return row(id,d,ed);}).join(''):'<tr><td colspan="5" class="mut">No documents uploaded yet</td></tr>';
+  h+='</tbody></table></div>';
+  if(ed)h+='<div class="gap" style="margin-top:8px;align-items:center;flex-wrap:wrap"><select id="docT">'+TYPES.map(function(t){return '<option>'+t+'</option>';}).join('')+'</select><input type="file" id="docF" accept="application/pdf,image/*"><button class="btn sm" onclick="XD.up(\''+id+'\')">Upload</button></div>';
+  return h+'</div>';
+}
+function up(id){
+  var f=document.getElementById('docF').files[0];if(!f)return toast('Pehle file chuno',1);
+  if(f.size>5*1024*1024)return toast('File 5 MB se chhoti honi chahiye',1);
+  var r=new FileReader();
+  r.onload=function(){call('docUpload',{memberId:id,type:document.getElementById('docT').value,name:f.name,mime:f.type,data:String(r.result).split(',')[1]}).then(function(docs){document.getElementById('docBox').outerHTML=box(id,docs);toast('Document uploaded');}).catch(function(){});};
+  r.readAsDataURL(f);
+}
+function view(id,docId){
+  call('docGet',{docId:docId}).then(function(d){
+    var bin=atob(d.data),u=new Uint8Array(bin.length),i;for(i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    var url=URL.createObjectURL(new Blob([u],{type:d.mime}));
+    var body=d.mime==='application/pdf'?'<iframe src="'+url+'" style="width:100%;height:70vh;border:0"></iframe>':'<img src="'+url+'" style="max-width:100%;max-height:70vh;display:block;margin:auto">';
+    modal('<div class="bar"><h3>'+esc(d.name)+'</h3><div class="gap"><a class="btn sm g" href="'+url+'" download="'+esc(d.name)+'">Download</a><button class="btn sm g" onclick="viewMember(\''+id+'\')">Back</button></div></div>'+body,true);
+  }).catch(function(){});
+}
+function del(id,docId){ask('Is document ko delete karein?',function(){return call('docDelete',{docId:docId}).then(function(){viewMember(id);toast('Document deleted');});});}
+window.XD={up:up,view:view,del:del};
+var _vm=window.viewMember;
+if(typeof _vm==='function')window.viewMember=async function(id){
+  await _vm(id);
+  try{
+    var docs=await call('docList',{id:id},{quiet:1}).catch(function(){return [];});
+    var md=document.querySelector('#modalRoot .md');if(!md||md.querySelector('#docBox'))return;
+    var end=md.querySelector(':scope > .gap.end'),html='<h3 style="margin-top:18px">Documents</h3>'+box(id,docs);
+    if(end)end.insertAdjacentHTML('beforebegin',html);else md.insertAdjacentHTML('beforeend',html);
+  }catch(e){}
+};
+})();
+</script>
+<script>
+/* ===== LEADS MODULE (added - nothing existing is changed) =====
+   Paste this whole block just BEFORE the final </body> line of Admin.html */
+(function(){
+var LT=['Walk-in','Phone Enquiry','Social Media','Referral','Website','Other'],LP=['Hot','Warm','Cold'],LS=['New','Contacted','Follow-up','Trial Booked','Negotiation','Converted','Lost'];
+var PC={Hot:'bad',Warm:'warn',Cold:'in'},SC={New:'in',Contacted:'mu','Follow-up':'warn','Trial Booked':'warn',Negotiation:'warn',Converted:'ok',Lost:'bad'};
+var LD={leads:[],remarks:[]},LF=[];
+function bg(s,m){return '<span class="b '+(m[s]||'mu')+'">'+esc(s||'-')+'</span>';}
+function ed(){return typeof gmCan==='function'?gmCan('leads','edit'):true;}
+function byId(id){return LD.leads.find(function(l){return l.LeadID===id;})||{};}
+function isOpen(l){return l.Status!=='Converted'&&l.Status!=='Lost';}
+
+var LOADED=false;
+V.leads=async function(){
+  if(LOADED)draw();
+  else $('#view').innerHTML='<div class="card">Loading leads...</div>';
+  var d;
+  try{d=await window.call('getLeads',{},{quiet:1});}catch(e){if(!LOADED)$('#view').innerHTML='<div class="card">Could not load leads.</div>';return;}
+  var first=!LOADED,changed=JSON.stringify(d)!==JSON.stringify(LD);
+  LD=d;LOADED=true;
+  if(page!=='leads')return;
+  if(first||changed)draw();
+};
+function draw(){
+  var keep={};['lq','lsf','lpf','ltf'].forEach(function(i){var e=document.getElementById(i);if(e)keep[i]=e.value;});
+  var L=LD.leads,td=DB.today,conv=L.filter(function(l){return l.Status==='Converted';}).length,
+  open=L.filter(isOpen).length,hot=L.filter(function(l){return l.Potential==='Hot'&&isOpen(l);}).length,
+  due=L.filter(function(l){return isOpen(l)&&l.FollowUpDate&&l.FollowUpDate<=td;}).length,
+  rate=L.length?Math.round(conv/L.length*100):0;
+  var S=[['Total Leads',L.length,''],['Open Leads',open,'warn'],['Hot Leads',hot,'bad'],['Converted',conv,'ok'],['Conversion Rate',rate+'%','ok'],['Follow-up Due',due,'bad']];
+  $('#view').innerHTML='<div class="bar"><h2>Leads</h2><div class="gap"><input id="lq" placeholder="Search name, mobile or ID" oninput="XL.list()">'+
+  '<select id="lsf" onchange="XL.list()"><option value="">All status</option><option value="Open">Open (not converted)</option>'+LS.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select>'+
+  '<select id="lpf" onchange="XL.list()"><option value="">All potential</option>'+LP.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select>'+
+  '<select id="ltf" onchange="XL.list()"><option value="">All types</option>'+LT.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select>'+
+  (ed()?'<button class="btn" onclick="XL.form()">+ Add Lead</button>':'')+'</div></div>'+
+  '<div class="stats">'+S.map(function(s){return '<div class="stat '+s[2]+'"><small>'+s[0]+'</small><div>'+s[1]+'</div></div>';}).join('')+'</div>'+
+  '<div class="card tw" id="ltb"></div>';
+  Object.keys(keep).forEach(function(i){var e=document.getElementById(i);if(e)e.value=keep[i];});
+  list();
+}
+function list(){
+  var q=$('#lq').value.toLowerCase(),s=$('#lsf').value,p=$('#lpf').value,t=$('#ltf').value,td=DB.today;
+  var L=LD.leads.filter(function(l){
+    return (l.Name+l.Mobile+l.LeadID).toLowerCase().indexOf(q)>=0&&(!s||(s==='Open'?isOpen(l):l.Status===s))&&(!p||l.Potential===p)&&(!t||l.LeadType===t);
+  }).sort(function(a,b){return a.LeadID<b.LeadID?1:-1;});
+  $('#ltb').innerHTML=tbl([
+    ['Lead',function(l){return '<b>'+esc(l.Name)+'</b><small>'+esc(l.LeadID)+' · '+esc(l.Mobile)+'</small>';}],
+    ['Type',function(l){return esc(l.LeadType);}],
+    ['Interest',function(l){return esc(l.Interest||'-');}],
+    ['Potential',function(l){return bg(l.Potential,PC);}],
+    ['Status',function(l){return bg(l.Status,SC);}],
+    ['Follow-up',function(l){var d=l.FollowUpDate||'-',late=isOpen(l)&&l.FollowUpDate&&l.FollowUpDate<=td;return late?'<b style="color:var(--bad)">'+d+'</b>':d;}],
+    ['Last Remark',function(l){var r=String(l.LastRemark||'');return '<span class="mut">'+esc(r.length>40?r.slice(0,40)+'...':r)+'</span>';}],
+    ['',function(l){var i=l.LeadID;return '<span class="gap"><button class="btn sm g" onclick="XL.view(\''+i+'\')">View</button>'+
+      (ed()?'<button class="btn sm g" onclick="XL.form(\''+i+'\')">Edit</button>':'')+
+      '<button class="btn sm w" onclick="XL.wa(\''+i+'\')">WA</button>'+
+      (ed()&&l.Status!=='Converted'?'<button class="btn sm k" onclick="XL.conv(\''+i+'\')">Convert</button>':'')+
+      (ed()?'<button class="btn sm r" onclick="XL.del(\''+i+'\')">Delete</button>':'')+'</span>';}]
+  ],L);
+}
+function form(id){
+  var l=id?Object.assign({},byId(id)):{LeadType:'Walk-in',Potential:'Warm',Status:'New',Gender:'Male'};
+  var it=['Not decided'].concat(DB.plans.map(function(p){return p.Name;}));
+  if(l.Interest&&it.indexOf(l.Interest)<0)it.push(l.Interest);
+  if(!l.Interest)l.Interest='Not decided';
+  LF=[{k:'Name',l:'Full Name',r:1},{k:'Mobile',l:'Mobile Number',t:'tel',r:1},{k:'WhatsApp',l:'WhatsApp Number',t:'tel'},{k:'Email',l:'Email Address',t:'email'},
+  {k:'Gender',l:'Gender',t:'select',o:['Male','Female','Other']},{k:'LeadType',l:'Lead Type',t:'select',o:LT},{k:'Interest',l:'Interested Plan',t:'select',o:it},
+  {k:'Potential',l:'Potential',t:'select',o:LP},{k:'Status',l:'Status',t:'select',o:LS},{k:'FollowUpDate',l:'Next Follow-up Date',t:'date'}];
+  if(!id)LF.push({k:'Remark',l:'First Remark',t:'textarea',full:1});
+  modal('<h3>'+(id?'Edit Lead '+id:'Add New Lead')+'</h3><div class="grid">'+LF.map(function(f){return fld(f,l);}).join('')+'</div><div id="lDup"></div>'+
+  '<div class="gap end"><button class="btn g" onclick="closeM()">Cancel</button><button class="btn" onclick="XL.save(\''+(id||'')+'\')">Save Lead</button></div>',true);
+  ['f_Mobile','f_WhatsApp'].forEach(function(k){var e=document.getElementById(k);if(e)e.addEventListener('input',function(){dup(id);});});
+  dup(id);
+}
+var MSC={Active:'ok','Expiring Soon':'warn',Expired:'bad',Inactive:'mu'};
+function l10(s){return String(s||'').replace(/[^0-9]/g,'').slice(-10);}
+function dup(self){
+  var box=document.getElementById('lDup');if(!box)return;
+  var nums=['f_Mobile','f_WhatsApp'].map(function(k){return l10((document.getElementById(k)||{}).value);}).filter(function(x){return x.length===10;});
+  if(!nums.length){box.innerHTML='';return;}
+  function hit(a,b){return nums.indexOf(l10(a))>=0||nums.indexOf(l10(b))>=0;}
+  var h='';
+  DB.members.forEach(function(m){if(hit(m.Mobile,m.WhatsApp))h+='<div class="card" style="margin:10px 0 0;padding:10px 12px;border-left:4px solid var(--bad)">⚠️ <b>Already a member:</b> '+esc(m.Name)+' ('+esc(m.MemberID)+') · '+bg(m.MStatus,MSC)+' · '+esc(m.Plan||'-')+' · Expiry '+esc(m.ExpiryDate||'-')+'</div>';});
+  LD.leads.forEach(function(x){if(x.LeadID!==self&&hit(x.Mobile,x.WhatsApp))h+='<div class="card" style="margin:10px 0 0;padding:10px 12px;border-left:4px solid var(--warn)">⚠️ <b>Already a lead:</b> '+esc(x.Name)+' ('+esc(x.LeadID)+') · '+bg(x.Status,SC)+' · '+esc(x.Potential||'-')+'</div>';});
+  box.innerHTML=h;
+}
+async function save(id){
+  var o=val(LF);if(!o)return;if(id)o.LeadID=id;
+  LD=await window.call('saveLead',{lead:o});closeM();toast('Lead saved');draw();
+}
+function view(id){
+  var l=byId(id),R=LD.remarks.filter(function(r){return r.LeadID===id;}).sort(function(a,b){return a.RemarkID<b.RemarkID?1:-1;}),E=ed();
+  var info=[['Mobile',l.Mobile],['WhatsApp',l.WhatsApp],['Email',l.Email],['Gender',l.Gender],['Lead Type',l.LeadType],['Interested Plan',l.Interest],['Next Follow-up',l.FollowUpDate],['Created',l.CreatedAt],['Created By',l.CreatedBy],['Member ID',l.ConvertedMemberID],['Converted On',l.ConvertedAt]];
+  var add=E?'<div class="card" style="background:#f9fafb;margin:0 0 12px"><label>Add remark</label><textarea id="lrT" rows="2" placeholder="Call kiya, kya baat hui, next step..."></textarea>'+
+    '<div class="gap" style="margin-top:8px"><div><label>Change status (optional)</label><select id="lrS"><option value="">Keep same</option>'+LS.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select></div>'+
+    '<div><label>Next follow-up (optional)</label><input type="date" id="lrF"></div><button class="btn" onclick="XL.remark(\''+id+'\')">Add Remark</button></div></div>':'';
+  modal('<div class="bar"><div><h2>'+esc(l.Name)+'</h2><span class="mut">'+id+'</span> '+bg(l.Potential,PC)+' '+bg(l.Status,SC)+'</div><div class="gap">'+
+    (E?'<button class="btn sm g" onclick="XL.form(\''+id+'\')">Edit</button>':'')+'<button class="btn sm w" onclick="XL.wa(\''+id+'\')">WhatsApp</button>'+
+    (E&&l.Status!=='Converted'?'<button class="btn sm k" onclick="XL.conv(\''+id+'\')">Convert to Member</button>':'')+'</div></div>'+
+    '<div class="grid">'+info.map(function(i){return '<div><label>'+i[0]+'</label>'+esc(i[1]||'-')+'</div>';}).join('')+'</div>'+
+    '<h3 style="margin-top:18px">Remarks History ('+R.length+')</h3>'+add+
+    (R.length?R.map(function(r){return '<div class="li"><span><b style="font-weight:500">'+esc(r.Remark)+'</b><small>'+esc(r.Date)+' · '+esc(r.By||'-')+'</small></span></div>';}).join(''):'<div class="mut">No remarks yet</div>')+
+    '<div class="gap end"><button class="btn g" onclick="closeM()">Close</button></div>',true);
+}
+async function remark(id){
+  var t=$('#lrT').value.trim();if(!t)return toast('Pehle remark likho',1);
+  LD=await window.call('addLeadRemark',{id:id,remark:t,status:$('#lrS').value,followUp:$('#lrF').value});
+  toast('Remark added');draw();view(id);
+}
+function wl(id){
+  var l=byId(id),S=String.fromCharCode(47),num=String(l.WhatsApp||l.Mobile||'').replace(/[^0-9]/g,'');
+  if(num.length===10)num=CC+num;
+  var msg='Hello '+l.Name+', thank you for your interest in '+GYM+'. We would love to help you start your fitness journey. When can you visit us?';
+  window.open('https:'+S+S+'wa.me'+S+num+'?text='+encodeURIComponent(msg),'_blank');
+}
+function del(id){
+  ask('Is lead aur uske saare remarks delete karein?',async function(){LD=await window.call('deleteLead',{id:id});toast('Lead deleted');draw();});
+}
+function conv(id){
+  var l=byId(id);closeM();window.memberForm();
+  var md=document.querySelector('#modalRoot .md');if(md)md.dataset.lead=id;
+  function set(k,v){var e=document.getElementById('f_'+k);if(e&&v)e.value=v;}
+  set('Name',l.Name);set('Mobile',l.Mobile);set('WhatsApp',l.WhatsApp);set('Email',l.Email);set('Gender',l.Gender);
+  toast('Lead ki details bhar di gayi hain - plan chuno aur Save karo');
+}
+/* after a member is saved from "Convert", mark the lead as Converted automatically */
+var _sm=window.saveMember;
+if(typeof _sm==='function')window.saveMember=async function(id){
+  var md=document.querySelector('#modalRoot .md'),lid=md&&md.dataset?md.dataset.lead:'',mob=(document.getElementById('f_Mobile')||{}).value||'';
+  await _sm(id);
+  if(!lid||id||document.querySelector('#modalRoot .md'))return;
+  var m=DB.members.filter(function(x){return String(x.Mobile)===String(mob);}).pop();
+  try{LD=await window.call('convertLead',{id:lid,memberId:m?m.MemberID:''});toast('Lead marked as Converted');if(page==='leads')draw();}catch(e){}
+};
+window.XL={list:list,form:form,save:save,view:view,remark:remark,wa:wl,del:del,conv:conv};
+
+/* menu item directly below Members */
+var mi=NAV.findIndex(function(x){return x[0]==='members';});
+NAV.splice(mi>=0?mi+1:NAV.length,0,['leads','Leads','🎯']);
+})();
 </script>
 </body>
 </html>
